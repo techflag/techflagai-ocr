@@ -3,6 +3,8 @@ import App from './App.vue'
 import {initRouter} from './router'
 import './theme/index.less'
 import Antd from 'ant-design-vue'
+// 添加图标引入
+import * as Icons from '@ant-design/icons-vue'
 import Viser from 'viser-vue'
 import '@/mock'
 import store from './store'
@@ -28,3 +30,9 @@ new Vue({
   i18n,
   render: h => h(App),
 }).$mount('#app')
+
+// 注册全局图标组件
+const icons = Icons
+for (const i in icons) {
+  Vue.component(i, icons[i])
+}

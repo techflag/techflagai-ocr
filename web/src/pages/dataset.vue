@@ -81,7 +81,9 @@ export default {
       })
     },
     handleDelete(item) {
-      // 处理删除逻辑
+      // 添加实际的删除逻辑，使用 item 参数
+      console.log('删除项目:', item.title)
+      // 这里可以添加确认对话框和实际的删除操作
     }
   },
   

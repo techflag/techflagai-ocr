@@ -321,14 +321,14 @@ const options = {
         },
         {
           name: '数据标注',
-          path: 'labeling',
+          path: 'dataset/labeling',
           meta: {
             icon: 'check-circle-o',
             query: {
               name: '菜单默认参数'
             }
           },
-          component: () => import('@/pages/Demo')
+          component: () => import('@/pages/dataset_label')
         },
         {
           name: '结构处理',

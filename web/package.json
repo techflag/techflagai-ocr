@@ -15,6 +15,7 @@
     "docs:deploy": "gh-pages -d docs/.vuepress/dist -b doc -r https://github.com/iczer/vue-antd-admin.git"
   },
   "dependencies": {
+    "@ant-design/icons-vue": "^2.0.0",
     "@antv/data-set": "^0.11.4",
     "animate.css": "^4.1.0",
     "ant-design-vue": "1.7.2",

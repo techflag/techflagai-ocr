@@ -1,153 +1,244 @@
 <template>
-  <div class="page-layout">
-    <page-header ref="pageHeader" :style="`margin-top: 0px`" >
-      <slot name="action"  slot="action"></slot>
-      <slot slot="content" name="headerContent"></slot>
-      <div slot="content" v-if="!this.$slots.headerContent && desc">
-        <p>{{desc}}</p>
-        <div v-if="this.linkList" class="link">
-          <template  v-for="(link, index) in linkList">
-            <a :key="index" :href="link.href"><a-icon :type="link.icon" />{{link.title}}</a>
-          </template>
-        </div>
-      </div>
-      <slot v-if="this.$slots.extra" slot="extra" name="extra"></slot>
-    </page-header>
-    <div class="card-list">
-      <div slot="extra">
-        <a-row>
-          <a-col :span="8">
-            <a-radio-group>
-            <a-radio-button>全部</a-radio-button>
-            <a-radio-button>进行中</a-radio-button>
-            <a-radio-button>等待中</a-radio-button>
+  <div>
+    <a-card :bordered="false" class="search-form">
+      <a-row>
+        <a-col :span="16">
+          <a-radio-group default-value="all" button-style="solid"  @change="sampleStautsOnChange">
+            <a-radio-button value="all">全部</a-radio-button>
+            <a-radio-button value="ext">已提取</a-radio-button>
+            <a-radio-button value="lable">已标注</a-radio-button>
           </a-radio-group>
-          </a-col>
-          <a-col :span="8">
-            <a-select
-              ref="select"
-              style="width: 120px"
-            >
-              <a-select-option value="jack">Jack</a-select-option>
-              <a-select-option value="lucy">Lucy</a-select-option>
-              <a-select-option value="disabled" disabled>Disabled</a-select-option>
-              <a-select-option value="Yiminghe">yiminghe</a-select-option>
+        </a-col>
+        <a-col :span="6">
+          <div class="dataset-select">
+            <span class="label">数据集：</span>
+            <a-select placeholder="不限" style="width: 120px">
+              <a-select-option value="1">优秀</a-select-option>
             </a-select>
-          </a-col>
-          <a-col :span="8">
-            <a-button type="primary" html-type="submit">上传数据</a-button>
-          </a-col>
+          </div>
+        </a-col>
+        <a-col :span="2">
+          <a-button @click="addNew" type="primary">上传数据</a-button>
+        </a-col>
       </a-row>
-        
-      </div>
-      
+    </a-card>
+    
+    <!-- 移除重复的列表，只保留一个 -->
     <a-list
-      :grid="{gutter: 24, lg: 3, md: 2, sm: 1, xs: 1}"
-      :dataSource="dataSource"
-      :pagination="{showSizeChanger: true, showQuickJumper: true, pageSize: 5, total: 50}"
+      :grid='{ gutter: 24, xl: 8, lg: 3, md: 3, sm: 2, xs: 1 }'
+      style="margin: 0 -8px"
     >
-      <a-list-item slot="renderItem" slot-scope="item">
-       
-        <template>
-          <a-card :hoverable="true">
-            <a-card-meta >
-              <div style="margin-bottom: 3px" slot="title">{{item.title}}</div>
-              <a-avatar class="card-avatar" slot="avatar" :src="item.avatar" size="large" />
-              <div class="meta-content" slot="description">{{item.content}}</div>
-            </a-card-meta>
-            <a slot="actions">详情</a>
-            <a slot="actions">删除</a>
-          </a-card>
-        </template>
+      <a-list-item :key="n" v-for="n in 18" style="padding: 0 8px">
+        <a-card @click="handleCardClick(n)">
+          <img slot="cover" src="https://gw.alipayobjects.com/zos/rmsportal/iZBVOIhGJiAnhplqjvZW.png" height="154"/>
+          <a-card-meta title="Ant Design">
+            <div slot="description">
+            </div>
+          </a-card-meta>
+        </a-card>
       </a-list-item>
     </a-list>
-  </div>
-  </div>
+    
+    <!-- 使用清除浮动确保分页在列表下方 -->
+    <div class="pagination-container">
+      <a-pagination v-model="current" :total="50" show-less-items />
+    </div>
 
+    <a-modal 
+      v-model="open" 
+      title="上传数据" 
+      @ok="handleOk" 
+      width="700px"
+      :destroyOnClose="true"
+    >
+      <template #footer>
+        <a-button key="back" @click="handleCancel">取消</a-button>
+        <a-button key="submit" type="primary" :loading="loading" @click="handleOk">提交</a-button>
+      </template>
+      <a-row>
+        <a-col :span="12">
+          <div class="dataset-upload">
+            <div class="upload-label">
+            <span class="label">数据集：</span>
+            </div>
+            <div class="upload-content">
+            <a-select placeholder="不限" style="width: 120px">
+              <a-select-option value="1">优秀</a-select-option>
+            </a-select>
+          </div>
+          </div>
+        </a-col>
+      </a-row>
+      <a-row style="margin-top: 10px;">
+        <a-col :span="12">
+          <div class="dataset-upload">
+            <div class="upload-label">
+              <span class="label">选择文件:</span>
+            </div>
+            <div class="upload-content">
+              <a-upload-dragger
+                    v-model="fileList"
+                    name="file"
+                    :multiple="true"
+                    action="https://www.mocky.io/v2/5cc8019d300000980a055e76"
+                    @change="handleChange"
+                  >
+                    <p class="ant-upload-drag-icon">
+                      <a-icon type="file-add" theme="twoTone" />
+                    </p>
+                    <p class="ant-upload-text">点击或拖拽文件到此区域上传</p>
+                  </a-upload-dragger>
+            </div>
+          </div>
+        </a-col>
+      </a-row>
+    </a-modal>
+  </div>
   
 </template>
 
 <script>
-import PageHeader from '@/components/page/header/PageHeader'
-const dataSource = []
-dataSource.push({
-  add: true
-})
-for (let i = 0; i < 11; i++) {
-  dataSource.push({
-    title: 'Alipay',
-    avatar: 'https://gw.alipayobjects.com/zos/rmsportal/WdGqmHpayyMjiEhcKoVE.png',
-    content: '在中台产品的研发过程中，会出现不同的设计规范和实现方式，但其中往往存在很多类似的页面和组件，这些类似的组件会被抽离成一套标准规范。'
-  })
-}
-
-export default {
-  name: 'CardList',
-  components: {PageHeader},
+export default { 
+  name: 'ProjectList',
   
   data () {
     return {
-      desc: '数据集是 OCR 模型训练和评估的基础，支持多种类型的文档图像数据集管理，包括表格、发票、合同等。您可以创建、导入、编辑和管理不同类型的数据集，用于模型训练和性能评估。',
-      linkList: [
-        {icon: 'plus-circle', href: '/#/', title: '创建数据集'},
-        {icon: 'upload', href: '/#/', title: '导入数据'},
-        {icon: 'file-text', href: '/#/', title: '使用说明'}
-      ],
-      extraImage: 'https://gw.alipayobjects.com/zos/rmsportal/RzwpdLnhmvDJToTdfDPe.png',
-      dataSource
+      current: 1,
+      form: {
+        labelCol: { span: 6 },
+        wrapperCol: { span: 12 }
+      },
+      open: false,
+      loading: false,
+      fileList:[]
+    }
+  },
+  created() {
+    // 初始化逻辑
+  },
+  methods: {
+    addNew() {
+      // 处理上传数据的逻辑
+      this.open = true
+      console.log('上传数据')
+    },
+    handleOk() {
+      this.loading = true;
+      // 移除焦点
+      document.activeElement.blur();
+      setTimeout(() => {
+        this.loading = false;
+        this.open = false;
+      }, 3000);
+    },
+    handleCancel() {
+      this.open = false
+    },
+    handleRemove(file) {
+      console.log(file)
+      const index = this.fileList.indexOf(file);
+      const newFileList = this.fileList.slice();
+      newFileList.splice(index, 1);
+      this.fileList = newFileList;
+    },
+    beforeUpload(file) {
+      this.fileList = [...this.fileList, file];
+      return false;
+    },
+    handleChange(info) {
+        const status = info.file.status;
+        if (status !== 'uploading') {
+          console.log(info.file, info.fileList);
+        }
+        if (status === 'done') {
+          this.$message.success(`${info.file.name} file uploaded successfully.`);
+        } else if (status === 'error') {
+          this.$message.error(`${info.file.name} file upload failed.`);
+        }
+    },
+    sampleStautsOnChange(e) {
+      console.log(`checked = ${e.target.value}`);
+    },
+    handleCardClick(id) {
+      this.$router.push({
+        path: '/dataset/labeling',
+        query: {
+          id: id,
+          mode: 'annotate'
+        }
+      })
     }
   }
 }
 </script>
 
 <style lang="less" scoped>
- .card-list{
+  .content{
+    display: flex;
+    margin-top: 16px;
+    margin-bottom: -4px;
+    line-height: 20px;
+    height: 20px;
+    & > span {
+      color: @text-color-second;
+      flex: 1;
+      font-size: 12px;
+    }
+    .avatarList {
+      flex: 0 1 auto;
+    }
+  }
+  
+  .list-container {
+    position: relative;
+    min-height: 200px;
     margin-top: 24px;
   }
- .page-header{
-    margin: 0 -24px 0;
+  
+  .pagination-wrapper {
+    text-align: center;
+    margin-top: 16px;
+    padding: 16px 0;
+    background: #fff;
   }
-  .link{
-    /*margin-top: 16px;*/
-    line-height: 24px;
-    a{
-      font-size: 14px;
-      margin-right: 32px;
-      i{
-        font-size: 22px;
-        margin-right: 8px;
-      }
-    }
-  }
-  .page-content{
-    position: relative;
-    padding: 24px 0 0;
-    &.side{
-    }
-    &.head.fixed{
-      margin: 0 auto;
-      max-width: 1400px;
-    }
-  }
-
-  .card-avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 48px;
-  }
-  .new-btn{
-    border-radius: 2px;
+  
+  /* 移除之前的list-container相关样式 */
+  
+  .pagination-container {
+    clear: both; /* 清除浮动 */
     width: 100%;
-    height: 187px;
+    text-align: center;
+    margin-top: 24px;
+    padding: 16px 0;
+    background: #fff;
   }
-  .meta-content{
-    position: relative;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    height: 64px;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
+  
+  .dataset-select {
+    display: flex;
+    align-items: center;
+    
+    .label {
+      margin-right: 8px;
+    }
   }
 
+  .dataset-upload {
+    display: flex;
+    align-items: flex-start;  // 改为顶部对齐
+    
+    .upload-label {
+      flex: 0 0 80px;  // 固定宽度，不会被挤压或拉伸
+      margin-right: 8px;
+      padding-top: 8px;  // 稍微向下偏移以对齐上传区域
+    }
+    
+    .upload-content {
+      flex: 1;  // 占据剩余空间
+      min-width: 0;  // 防止内容溢出
+    }
+
+    .label {
+      white-space: nowrap;  // 防止文字换行
+    }
+  }
 </style>
