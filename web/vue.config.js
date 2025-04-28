@@ -36,20 +36,30 @@ const assetsCDN = {
 
 module.exports = {
   devServer: {
-    // proxy: {
-    //   '/api': { //此处要与 /services/api.js 中的 API_PROXY_PREFIX 值保持一致
-    //     target: process.env.VUE_APP_API_BASE_URL,
-    //     changeOrigin: true,
-    //     pathRewrite: {
-    //       '^/api': ''
-    //     }
-    //   }
-    // }
+    proxy: {
+      '/api': {
+        target: 'http://117.73.9.156:8083', // 目标服务端地址
+        changeOrigin: true,
+        pathRewrite: {
+          '^/api': '/api' // 如果你的后端接口路径前面有/api就这样写，否则可以写成''
+        }
+      }
+    }
   },
   pluginOptions: {
     'style-resources-loader': {
       preProcessor: 'less',
       patterns: [path.resolve(__dirname, "./src/theme/theme.less")],
+    }
+  },
+  css: {
+    loaderOptions: {
+      less: {
+        lessOptions: {
+          javascriptEnabled: true,
+          modifyVars: modifyVars()
+        }
+      }
     }
   },
   configureWebpack: config => {
@@ -100,18 +110,10 @@ module.exports = {
       })
     }
   },
-  css: {
-    loaderOptions: {
-      less: {
-        lessOptions: {
-          modifyVars: modifyVars(),
-          javascriptEnabled: true
-        }
-      }
-    }
-  },
+ 
   publicPath: process.env.VUE_APP_PUBLIC_PATH,
   outputDir: 'dist',
   assetsDir: 'static',
   productionSourceMap: false
 }
+

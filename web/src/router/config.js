@@ -290,7 +290,7 @@ const options = {
           path: 'recognize',
           meta: {
             icon: 'form',
-           
+            invisible: true
           },
           component: () => import('@/pages/recognize')
         },
@@ -300,7 +300,7 @@ const options = {
           meta: {
             icon: 'table'
           },
-          component: () => import('@/pages/dataset')
+          component: () => import('@/pages/dataset/main')
         },
         {
           name: '数据详情',
@@ -309,7 +309,7 @@ const options = {
             icon: 'table',
             invisible: true
           },
-          component: () => import('@/pages/dataset_list')
+          component: () => import('@/pages/dataset/list')
         },
         {
           name: '模型管理',
@@ -317,7 +317,16 @@ const options = {
           meta: {
             icon: 'profile'
           },
-          component: () => import('@/pages/Demo')
+          component: () => import('@/pages/models/list')
+        },
+        {
+          name: '模型训练配置',
+          path: 'models/config',
+          meta: {
+            icon: 'profile',
+            invisible: true
+          },
+          component: () => import('@/pages/models/config')
         },
         {
           name: '数据标注',
@@ -328,7 +337,7 @@ const options = {
               name: '菜单默认参数'
             }
           },
-          component: () => import('@/pages/dataset_label')
+          component: () => import('@/pages/dataset/label')
         },
         {
           name: '结构处理',

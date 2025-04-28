@@ -81,8 +81,8 @@
         self_uniqueId: '',
         showDeleteButton: false,
         toolPosition: {
-          top: window.innerHeight - 100,  // 工具条初始距离页面底部的距离
-          left: window.innerWidth / 2 - 300,
+          top: 130 ,  // 工具条初始距离页面底部的距离
+          left: window.innerWidth / 2 - 350,
         },
         isDragging: false,  // 是否正在拖动
         offsetX: 0,  // 拖动时的横向偏移量
@@ -120,10 +120,10 @@
       this.addSvgEventListeners(this.svg);
   
       // 确保页面加载完成后再赋值，防止拖动时获取到 undefined
-      this.toolPosition = {
-        top: window.innerHeight - 100,
-        left: window.innerWidth / 2 - 300,
-      };
+      // this.toolPosition = {
+      //   top: window.innerHeight - 100,
+      //   left: window.innerWidth / 2 - 300,
+      // };
     },
     methods: {
       loadOcrData() {
@@ -145,8 +145,7 @@
         
         getDataset(ds_id+'_rec.json')
             .then(response => {
-              let resp= response;
-              console.log('resp:',resp)
+              let resp= response.data;
               let _annotation_result = JSON.parse(resp);
               this.ocrData = _annotation_result;
               this.imageElement = this.$refs.imageElement;

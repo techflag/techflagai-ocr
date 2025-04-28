@@ -5,12 +5,19 @@
       <slot slot="content" name="headerContent"></slot>
       <div slot="content" v-if="!this.$slots.headerContent && desc">
         <p>{{desc}}</p>
-        <div v-if="this.linkList" class="link">
-          <template  v-for="(link, index) in linkList">
-            <a :key="index" :href="link.href"><a-icon :type="link.icon" />{{link.title}}</a>
-          </template>
+        <div class="link">
+          <span @click="showCreateModal">
+            <a-icon type="plus-circle" />创建数据集
+          </span>
+          <span @click="handleImport">
+            <a-icon type="upload" />导入数据
+          </span>
+          <span @click="openDoc">
+            <a-icon type="file-text" />使用说明
+          </span>
         </div>
       </div>
+      
       <slot v-if="this.$slots.extra" slot="extra" name="extra"></slot>
     </page-header>
     <div class="card-list">
@@ -19,12 +26,7 @@
       :dataSource="dataSource"
     >
       <a-list-item slot="renderItem" slot-scope="item">
-        <template v-if="item.add">
-          <a-button class="new-btn" type="dashed">
-            <a-icon type="plus" />新增产品
-          </a-button>
-        </template>
-        <template v-else>
+        
           <a-card :hoverable="true">
             <a-card-meta @click="handleCardClick(item)">
               <div style="margin-bottom: 3px" slot="title">{{item.title}}</div>
@@ -34,7 +36,7 @@
             <a slot="actions" @click="handleDetail(item)">详情</a>
             <a slot="actions" @click="handleDelete(item)">删除</a>
           </a-card>
-        </template>
+        
       </a-list-item>
     </a-list>
   </div>
@@ -47,9 +49,6 @@
 <script>
 import PageHeader from '@/components/page/header/PageHeader'
 const dataSource = []
-dataSource.push({
-  add: true
-})
 for (let i = 0; i < 11; i++) {
   dataSource.push({
     title: 'Alipay',
@@ -84,18 +83,24 @@ export default {
       // 添加实际的删除逻辑，使用 item 参数
       console.log('删除项目:', item.title)
       // 这里可以添加确认对话框和实际的删除操作
-    }
+    },
+    showCreateModal() {
+    // 这里弹出创建数据集的弹框
+    this.$message.info('弹出创建数据集弹框')
+  },
+  handleImport() {
+    // 这里处理导入数据逻辑
+    this.$message.info('导入数据功能')
+  },
+  openDoc() {
+    window.open('/#/', '_blank')
+  }
   },
   
   data () {
     return {
       current:2,
       desc: '数据集是 OCR 模型训练和评估的基础，支持多种类型的文档图像数据集管理，包括表格、发票、合同等。您可以创建、导入、编辑和管理不同类型的数据集，用于模型训练和性能评估。',
-      linkList: [
-        {icon: 'plus-circle', href: '/#/', title: '创建数据集'},
-        {icon: 'upload', href: '/#/', title: '导入数据'},
-        {icon: 'file-text', href: '/#/', title: '使用说明'}
-      ],
       extraImage: 'https://gw.alipayobjects.com/zos/rmsportal/RzwpdLnhmvDJToTdfDPe.png',
       dataSource
     }
@@ -113,9 +118,11 @@ export default {
   .link{
     /*margin-top: 16px;*/
     line-height: 24px;
-    a{
+    a, span {
       font-size: 14px;
       margin-right: 32px;
+      cursor: pointer;
+      color: #1890ff;
       i{
         font-size: 22px;
         margin-right: 8px;

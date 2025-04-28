@@ -5,11 +5,7 @@
       <slot slot="content" name="headerContent"></slot>
       <div slot="content" v-if="!this.$slots.headerContent && desc">
         <p>{{desc}}</p>
-        <div v-if="this.linkList" class="link">
-          <template  v-for="(link, index) in linkList">
-            <a :key="index" :href="link.href"><a-icon :type="link.icon" />{{link.title}}</a>
-          </template>
-        </div>
+        
       </div>
       <slot v-if="this.$slots.extra" slot="extra" name="extra"></slot>
     </page-header>
@@ -144,12 +140,8 @@ export default {
         }
       ],
       current: 2,
-      desc: '数据集是 OCR 模型训练和评估的基础，支持多种类型的文档图像数据集管理，包括表格、发票、合同等。您可以创建、导入、编辑和管理不同类型的数据集，用于模型训练和性能评估。',
-      linkList: [
-        {icon: 'plus-circle', href: '/#/', title: '创建数据集'},
-        {icon: 'upload', href: '/#/', title: '导入数据'},
-        {icon: 'file-text', href: '/#/', title: '使用说明'}
-      ],
+      desc: '标注功能说明：\n1. 标注：在图片上框选区域并添加文本或标签，实现目标内容的精确标注。\n2. 删除标注：选中已添加的标注区域后可进行删除，便于修正错误标注。\n3. 纠偏：对已标注区域的位置、大小等进行调整，确保标注准确。\n4. 保存：一键保存当前所有标注内容，防止数据丢失。\n5. 显示/隐藏背景图：切换图片背景的显示状态，便于专注于标注内容。\n6. 显示/隐藏标注：切换所有标注内容的显示与隐藏，便于对比原图。\n7. 显示/隐藏标注框：单独控制标注框的可见性，提升标注体验和视觉清晰度。',
+     
       extraImage: 'https://gw.alipayobjects.com/zos/rmsportal/RzwpdLnhmvDJToTdfDPe.png',
     }
   }
