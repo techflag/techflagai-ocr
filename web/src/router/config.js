@@ -348,7 +348,7 @@ const options = {
           component: () => import('@/pages/structure/main')
         },
         {
-          name: '结构处理',
+          name: '结构处理详情',
           path: 'structure/detail',
           meta: {
             icon: 'project',
