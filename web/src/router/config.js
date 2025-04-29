@@ -341,14 +341,20 @@ const options = {
         },
         {
           name: '结构处理',
-          path: 'process',
+          path: 'structure',
+          meta: {
+            icon: 'project'
+          },
+          component: () => import('@/pages/structure/main')
+        },
+        {
+          name: '结构处理',
+          path: 'structure/detail',
           meta: {
             icon: 'project',
-            query: {
-              name: '菜单默认参数'
-            }
+            invisible: true
           },
-          component: () => import('@/pages/Demo')
+          component: () => import('@/pages/structure/detail')
         },
         {
           name: '系统配置',
