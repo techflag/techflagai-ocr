@@ -16,12 +16,9 @@
         </luckysheet>
         </a-layout-sider>
         <a-layout-content style="padding: 24px; background: #fff; min-height: 280px;">
-          <json-editor 
-              v-model="form.json_content"
-              :show-btns="false"
-              :mode="'code'"
-              @json-change="onJsonChange"
-            />
+          <vue-json-editor 
+      v-model="form.json_content" :showBtns="true" lang="zh"
+      @json-change="onJsonChange" @json-save = "onJsonSave"/>
         <a-button size="small" type="danger" style="position: absolute;top: 7px;right: 150px" @click="submitForm">保存</a-button>
       
         </a-layout-content>
@@ -35,13 +32,13 @@
 </template>
 
 <script>
-import JsonEditor from 'vue-json-edit';
+import vueJsonEditor  from 'vue-json-editor';
 import Luckysheet from "@/components/Luckysheet/index.vue";
 export default {
   name: 'CardList',
   components: {
     Luckysheet,
-    JsonEditor,
+    vueJsonEditor ,
   },
   data () {
     return {
@@ -54,6 +51,9 @@ export default {
         showtoolbar: true,
         showsheetbar: false,
         showstatisticBar: true
+      },
+      json: {
+        msg: 'demo of jsoneditor'
       }
     }
   },
@@ -62,6 +62,10 @@ export default {
     
   },
   methods: {
+    onJsonChange () { // 数据改变时触发
+    },
+    onJsonSave(){ // 点击保存触发
+    },
     cellMousedownBefore (cell, position) {
       const res = [position.r, position.c].join(',')
 
@@ -93,9 +97,7 @@ export default {
         this.$message.error('保存失败：' + err.message)
       })
     },
-    onJsonChange(value) {
-      this.form.json_content = value;
-    }
+    
   },
   
   
