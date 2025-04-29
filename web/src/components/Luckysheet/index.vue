@@ -13,7 +13,7 @@
 
 <script>
 import LuckyExcel from 'luckyexcel'
-import {showFile} from "@/services/upload.js"
+//import {showFile} from "@/services/upload.js"
 import {exportExcel} from "@/utils/export"
 
 export default {
@@ -80,8 +80,14 @@ data() {
 
 methods: {
   initLuckysheet() {
-    window.luckysheet.destroy()
-    window.luckysheet.create(this.options)
+    if (typeof window.luckysheet === 'undefined') {
+      console.error('Luckysheet library not loaded');
+      return;
+    }
+    if (window.luckysheet.destroy) {
+      window.luckysheet.destroy();
+    }
+    window.luckysheet.create(this.options);
   },
 
   async saveExcel() {
@@ -96,14 +102,17 @@ methods: {
   },
 
   async downloadExcel() {
-    const res = await showFile({
-      name: this.name
-    })
-    const blob = new Blob([res])
+    try {
+    const res = await fetch('http://47.99.148.195:7090/api/file/showFile?name=temp%2F05.xlsx')
+    const blob = await res.blob()
     const file = new File([blob], 'test.xlsx', {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     })
     this.loadExcel(file)
+  }
+    catch(error) {
+    console.error('Download failed:', error);
+  }
   },
 
   loadExcel(files) {
@@ -140,11 +149,15 @@ methods: {
 },
 
 mounted() {
+  if (typeof window.luckysheet === 'undefined') {
+    console.error('Luckysheet library not loaded');
+    return;
+  }
   this.$nextTick(() => {
-    this.initLuckysheet()
-  })
-  this.downloadExcel()
-}
+    this.initLuckysheet();
+    this.downloadExcel()
+  });
+},
 }
 </script>
 

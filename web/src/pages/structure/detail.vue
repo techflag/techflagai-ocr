@@ -3,8 +3,8 @@
     
     <a-card class="card-list">
     
-      <a-layout>
-        <a-layout-sider width="50%" style="background: #fff000; padding: 24px;">
+      <a-layout style="height: calc(100vh - 150px);">
+        <a-layout-sider width="50%" style=" background: #fff;">
           <luckysheet ref="luckysheetRef"
                     v-if="form.output_excel"
                     :allow-edit="false"
@@ -15,11 +15,11 @@
                     :name="form.output_excel">
         </luckysheet>
         </a-layout-sider>
-        <a-layout-content style="padding: 24px; background: #fff; min-height: 280px;">
+        <a-layout-content style=" background: #fff; min-height: 400px;">
           <vue-json-editor 
-      v-model="form.json_content" :showBtns="true" lang="zh"
-      @json-change="onJsonChange" @json-save = "onJsonSave"/>
-        <a-button size="small" type="danger" style="position: absolute;top: 7px;right: 150px" @click="submitForm">保存</a-button>
+        v-model="form.json_content"  lang="zh"
+        @textSelectionChange="textSelectionChange" style="height: calc(100vh - 160px);" />
+        <a-button size="small" type="danger" style="position: absolute;top: 5px;right: 150px" @click="submitForm">保存</a-button>
       
         </a-layout-content>
       </a-layout>
@@ -44,13 +44,21 @@ export default {
     return {
       form: {
         id: undefined,
-        output_excel: '',
+        output_excel: 'temp_05.xlsx',
         json_content: {}
       },
       config: {
-        showtoolbar: true,
-        showsheetbar: false,
-        showstatisticBar: true
+        showinfobar: false,
+        showtoolbar: false, // 是否显示工具栏
+        showsheetbar: false, // 是否显示底部sheet页按钮
+        showstatisticBar: false, // 是否显示底部计数栏
+        sheetBottomConfig: false, // sheet页下方的添加行按钮和回到顶部按钮配置
+        showsheetbarConfig: {
+          add: false, //新增sheet
+          menu: false, //sheet管理菜单
+          sheet: false, //sheet页显示
+        }
+        
       },
       json: {
         msg: 'demo of jsoneditor'
@@ -59,10 +67,24 @@ export default {
   },
   
   mounted() {
-    
+    console.log('form.output_excel value:', this.form.output_excel)
+    console.log('Luckysheet component mounted')
   },
   methods: {
-    onJsonChange () { // 数据改变时触发
+    textSelectionChange (editor, start, end, text)  {
+      console.log('textSelectionChange', editor, start, end, text)
+      if (text.startsWith ('#{') && text.endsWith('}')){
+
+        var val = text.replace('#{','').replace('}','')
+
+
+
+        var item = val.split(',')
+        console.log(item)
+       
+        
+
+      }
     },
     onJsonSave(){ // 点击保存触发
     },
@@ -108,47 +130,8 @@ export default {
  .card-list{
     margin-top: 24px;
   }
- .page-header{
-    margin: 0 -24px 0;
+  
+  ::v-deep .jsoneditor-vue {
+    height: calc(100vh - 160px) !important;
   }
-  .link{
-    /*margin-top: 16px;*/
-    line-height: 24px;
-    a, span {
-      font-size: 14px;
-      margin-right: 32px;
-      cursor: pointer;
-      color: #1890ff;
-      i{
-        font-size: 22px;
-        margin-right: 8px;
-      }
-    }
-  }
-  .page-content{
-    position: relative;
-    padding: 24px 0 0;
-    &.side{
-    }
-    &.head.fixed{
-      margin: 0 auto;
-      max-width: 1400px;
-    }
-  }
-  .search{
-    margin-bottom: 54px;
-  }
-  .fold{
-    width: calc(100% - 216px);
-    display: inline-block
-  }
-  .operator{
-    margin-bottom: 18px;
-  }
-  @media screen and (max-width: 900px) {
-    .fold {
-      width: 100%;
-    }
-  }
-
 </style>

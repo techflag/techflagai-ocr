@@ -5,6 +5,13 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <link rel="icon" href="<%= BASE_URL %>favicon.ico">
+        <!-- luckysheet 本地引用 -->
+        <link rel='stylesheet' href='/luckysheet/plugins/css/pluginsCss.css'/>
+        <link rel='stylesheet' href='/luckysheet/plugins/plugins.css'/>
+        <link rel='stylesheet' href='/luckysheet/css/luckysheet.css'/>
+        <link rel='stylesheet' href='/luckysheet/assets/iconfont/iconfont.css'/>
+        <script src="/luckysheet/plugins/js/plugin.js"></script>
+        <script src="/luckysheet/luckysheet.umd.js"></script>
     <title><%= process.env.VUE_APP_NAME %></title>
     <!-- require cdn assets css -->
     <% for (var i in htmlWebpackPlugin.options.cdn && htmlWebpackPlugin.options.cdn.css) { %>
