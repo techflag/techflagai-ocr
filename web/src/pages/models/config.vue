@@ -11,7 +11,29 @@
       </div>
       <slot v-if="this.$slots.extra" slot="extra" name="extra"></slot>
     </page-header>
-    <div class="card-list">
+    <div class="card-step-list">
+      <a-steps v-model="step" type="navigation" size="small" :style="stepStyle">
+      <a-step
+        title="数据准备"
+        sub-title=""
+        status="finish"
+        description="准备并验证训练数据集，确保数据质量"
+      />
+      <a-step
+        title="训练参数"
+        sub-title=""
+        status="process"
+        description="配置训练轮次、批量大小和学习率等核心参数"
+      />
+      <a-step
+        title="提交训练"
+        sub-title=""
+        status="wait"
+        description="启动模型训练任务，监控训练进度"
+      />
+    </a-steps>
+    </div>
+    <div class="card-list" style="margin-top: 0;"  v-if="this.step===0">
     
       <a-row class="row">
         <a-col :span="2" class="input_lable">
@@ -27,60 +49,52 @@
           数据集：
         </a-col>
         <a-col> 
-          <a-select placeholder="不限" style="width: 120px">
+          <a-select v-model="selectedDataset" placeholder="不限" style="width: 120px" @change="handleDatasetChange">
                 <a-select-option value="1">优秀</a-select-option>
-              </a-select>
+          </a-select>
         
         </a-col>
       </a-row> 
-    </div>
-    <div class="card-list">
     
-    <a-row class="row">
-      <a-col :span="2" class="input_lable">
-        <a-icon type="sliders" theme="twoTone" /> 数据处理
-      </a-col>
+      <a-row class="row">
+        <a-col :span="2" class="input_lable">
+          训练占比:
+        </a-col>
+        <a-col :span="2"  class="ratio"> 
+          <a-input-number
+              v-model="train_ratio"
+              :min="0"
+              :max="70"
+              :formatter="value => `${value}%`"
+              :parser="value => value.replace('%', '')"
+            />
       
-    </a-row> 
-    <a-row class="row">
-      <a-col :span="2" class="input_lable">
-        训练占比:
-      </a-col>
-      <a-col :span="2"  class="ratio"> 
-        <a-input-number
-            v-model="train_ratio"
-            :min="0"
-            :max="70"
-            :formatter="value => `${value}%`"
-            :parser="value => value.replace('%', '')"
-          />
-    
-      </a-col>
-      <a-col :span="12" class="input_lable">
-        <a-slider v-model="sliderValue" :tooltip-open="true" />
-      </a-col>
-      <a-col :span="2" class="input_lable">
-        验证占比:
-      </a-col>
-      <a-col :span="2" class="ratio"> 
-        <a-input-number
-            v-model="verify_ratio"
-            :min="0"
-            :max="30"
-            :formatter="value => `${value}%`"
-            :parser="value => value.replace('%', '')"
-            
-          />
-      </a-col>
-    </a-row> 
-    <a-row class="row">
-      <a-col :span="2">
-        
-      </a-col>
-      <a-col  class="train_desc">
-        本工具可完成数据集的训练集和验证集按比例随机切分，如果上传数据焦中含数据切分文件，会进行重新切分并保存为新的数据集，切分占比1-99之间，不可为0
-      </a-col>
-    </a-row>
+        </a-col>
+        <a-col :span="12" class="input_lable">
+          <a-slider v-model="sliderValue" :tooltip-open="true" />
+        </a-col>
+        <a-col :span="2" class="input_lable">
+          验证占比:
+        </a-col>
+        <a-col :span="2" class="ratio"> 
+          <a-input-number
+              v-model="verify_ratio"
+              :min="0"
+              :max="30"
+              :formatter="value => `${value}%`"
+              :parser="value => value.replace('%', '')"
+              
+            />
+        </a-col>
+      </a-row> 
+      <a-row class="row">
+        <a-col :span="2">
+          
+        </a-col>
+        <a-col  class="train_desc">
+          本工具可完成数据集的训练集和验证集按比例随机切分，如果上传数据焦中含数据切分文件，会进行重新切分并保存为新的数据集，切分占比1-99之间，不可为0
+        </a-col>
+      </a-row>
     <a-row class="row">
       <a-col :span="2" class="train_desc">
         
@@ -95,13 +109,113 @@
         
       </a-col>
     </a-row>
-    <a-row class="row">
-      <a-col class="dataset_check">
+    <a-row class="dataset_preview_row">
+      <a-divider />
+      <a-col class="dataset_preview">
+        <div style="margin-top: 20px;">
+              <div style="display: flex;justify-content: space-between;align-items: center;">
+                <div class="dataset_previe_radio">
+                  <a-radio-group v-model="datasetType" @change="changeImage">
+                    <a-radio-button value="1">训练集</a-radio-button>
+                    <a-radio-button value="2">验证集</a-radio-button>
+                  </a-radio-group>
+                </div>
+                <div>抽样展示10个样本</div>
+              </div>
+              <div style="margin-top: 12px;text-align: center;padding:12px">
+                <img style="max-width:100%;height:240px;background:#F7F9FF" :src="dataimageUrl" alt="">
+                <div class="dataimage_select">
+                  <div class="select_item" @click="changedataimage(item,idx)" :class="{'active':dataimageisActive==idx}"
+                       :style="'background-image: url('+item+')'" v-for="(item,idx) in dataimageList" :key="idx"></div>
+                </div>
+              </div>
+            </div>
+      </a-col>
+    </a-row>
+    <a-row class="row_button">
+      <a-col class="dataset_check" :span="16">
         <a-button type="primary" block>数据校验</a-button>
+      </a-col>
+      <a-col class="dataset_next">
+        <a-button type="primary" @click="toStep(1)" block>下一步</a-button>
       </a-col>
     </a-row>
   </div>
-  </div>
+  <div class="card-config-list" style="margin-top: 0;"  v-if="this.step===1">
+    <a-row class="train-config-form">
+      <a-col >
+        <a-form>
+          <a-form-item label="轮次(Epochs)" :help="tips.epochs">
+            <a-input-number  v-model="train_confing.epochs" class="train-config-item" />
+          </a-form-item>
+          <a-form-item label="批大小(Batch Size)" :help="tips.batchSize">
+            <a-input-number v-model="train_confing.batchSize"  class="train-config-item"  />
+          </a-form-item>
+          <a-form-item label="学习率(Learning Rate)" :help="tips.learningRate">
+            <a-input-number v-model="train_confing.learningRate"  class="train-config-item"   />
+          </a-form-item>
+          <a-form-item>
+            <a-form-item>
+              <div class="button-group">
+                <a-button type="primary" @click="toStep(0)"  class="btn_next">上一步</a-button>
+                <a-button type="primary" @click="toStep(2)"  class="btn_next">下一步</a-button>
+              </div>
+            </a-form-item>
+          </a-form-item>
+        </a-form>
+      </a-col>
+    </a-row>
+  </div> 
+  <div class="card-config-list" style="margin-top: 0;"  v-if="this.step===2">
+    <a-row class="train-config-form">
+      <a-col >
+        <a-form>
+          <a-form-item label="模型框架" :help="tips.models">
+            <a-select v-model="selectModel" style="width: 120px" @change="handleModelChange">
+                <a-select-option value="jack">
+                  Jack
+                </a-select-option>
+                <a-select-option value="lucy">
+                  Lucy
+                </a-select-option>
+                <a-select-option value="disabled" disabled>
+                  Disabled
+                </a-select-option>
+                <a-select-option value="Yiminghe">
+                  yiminghe
+                </a-select-option>
+              </a-select>
+          </a-form-item>
+          
+          <a-form-item>
+            <a-form-item>
+              <div class="button-group">
+                <a-button type="primary" @click="toStep(1)" class="btn_next">上一步</a-button>
+                <a-button type="primary" @click="toStep(3)" class="btn_next">提交</a-button>
+              </div>
+            </a-form-item>
+          </a-form-item>
+        </a-form>
+      </a-col>
+    </a-row>
+  </div>  
+  <a-result
+  v-if="this.step===3"
+    style=" background: white; "
+    status="success"
+    title="新模型提交训练成功，请耐心等待"
+    subTitle="模型训练完成后，您可以在模型管理中查看模型的训练状态和性能指标。"
+  >
+    <template #extra>
+      <a-button @click="toModels" type="primary">
+      模型管理
+      </a-button>
+      <a-button @click="toModelLog">
+      训练日志
+      </a-button>
+    </template>
+  </a-result>
+</div>
 
   
 </template>
@@ -120,16 +234,182 @@ export default {
       modelName: 'finished',
       sliderValue: 30,
       verify_ratio: 30,
-      train_ratio: 30
+      train_ratio: 30,
+      dataimageUrl: 'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F02.png',
+      dataimageisActive: 0,
+      dataimageList: [
+        'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F02.png',
+        'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F03.png',
+        'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F07.png',
+        'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F08.png',
+        'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F09.png',
+        'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F10.png',
+        'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F11.png',
+        'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F12.png',
+        'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F13.png',
+        'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F14.png'
+      ],
+      datasetType: '1',
+      step: 0,
+      stepStyle: {
+        marginBottom: '0px',
+        boxShadow: '0px -1px 0 0 #e8e8e8 inset',
+        maxWidth: 'none !important',
+      },
+      tips:{
+        "epochs": "训练轮次越大，耗时越久，最终精度通常越高",
+        "batchSize": "单卡Batch Size，值越大，显存占用越高",
+        "learningRate": "学习率建议参考Batch Size进行同比例的调整",
+        "models": "模型框架, 建议选择PaddleOCR"
+      },
+      train_confing:{
+        epochs: 10,
+        batchSize: 32,
+        learningRate: 0.001
+      },
+      selectedDataset: '',
+      selectModel: '',
     }
   },
   methods: {
+    changedataimage (item, idx)  {
+      this.dataimageUrl.value = item
+      this.dataimageisActive.value = idx
+    },
+    changeImage (value) {
+      console.log(value)
+    },
+    handleModelChange (value) {
+      this.selectModel=value
+    },
+    handleDatasetChange(value) {
+      this.selectedDataset = value
+    },
+    validateStep0() {
+      if (!this.modelName?.trim()) {
+        this.$message.error('请输入模型名称')
+        return false
+      }
+      if (!this.selectedDataset) {
+        this.$message.error('请选择数据集')
+        return false
+      }
+      if (this.train_ratio <= 0 || this.verify_ratio <= 0) {
+        this.$message.error('训练占比和验证占比不能为0')
+        return false
+      }
+      if (this.train_ratio + this.verify_ratio !== 100) {
+        this.$message.error('训练占比和验证占比之和必须为100%')
+        return false
+      }
+      return true
+    },
+  
+    validateStep1() {
+      const { epochs, batchSize, learningRate } = this.train_confing
+      if (!epochs || epochs <= 0) {
+        this.$message.error('请设置有效的训练轮次')
+        return false
+      }
+      if (!batchSize || batchSize <= 0) {
+        this.$message.error('请设置有效的批大小')
+        return false
+      }
+      if (!learningRate || learningRate <= 0) {
+        this.$message.error('请设置有效的学习率')
+        return false
+      }
+      return true
+    },
+  
+    validateStep2() {
+      if (!this.selectModel) {
+        this.$message.error('请选择模型框架')
+        return false
+      }
+      return true
+    },
+  
+    toStep(step) {
+      // 前进验证
+      if (step > this.step) {
+        const validators = {
+          1: () => this.validateStep0(),
+          2: () => this.validateStep1(),
+          3: () => {
+            // 提交时验证所有步骤
+            return this.validateStep0() && 
+                   this.validateStep1() && 
+                   this.validateStep2() && 
+                   this.submitTraining()
+          }
+        }
+        
+        if (validators[step] && !validators[step]()) {
+          return
+        }
+      }
+      
+      this.step = step
+    },
+    submitTraining() {
+      this.$message.success('训练任务提交成功！')
+      return true
+    },
     
+    toModels() {
+      this.$router.push('/models')
+    },
+    
+    toModelLog() {
+      this.$router.push('/model/log')
+    }
   }
 }
 </script>
 
 <style lang="less" scoped>
+:deep(.ant-steps) {
+  .ant-steps-item-description {
+    max-width: none !important;
+    white-space: normal;
+  }
+}
+.stepStyle {
+    margin-bottom: '60px';
+    box-shadow: '0px -1px 0 0 #e8e8e8 inset';
+    :deep(.ant-steps-horizontal:not(.ant-steps-label-vertical) .ant-steps-item-description) {
+      max-width: none !important;  // 移除最大宽度限制
+      white-space: normal;
+      padding-right: 10px;
+    }
+}
+
+.dataimage_select {
+  margin-top: 16px;
+  display: flex;
+  overflow-x: auto;
+}
+
+.select_item {
+  cursor: pointer;
+  width: 70px;
+  height: 52px;
+  border-radius: 0px;
+  border: 1px solid transparent;
+  background: #F7F9FF;
+  flex: 0 0 auto;
+  margin-right: 8px;
+  margin-left: auto;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center center;
+}
+
+.select_item.active {
+  border: 1px solid #5061FF;
+}
+
 :deep(.ant-tag) {
   color: #333 !important;
 }
@@ -137,9 +417,53 @@ export default {
     padding-top: 15px;
     margin-top: 24px;
     background: white; 
-    padding-left: 20px;
-    padding-bottom: 24px;
+    padding-bottom: 5px;
   }
+
+  .card-config-list{
+    padding-top: 15px;
+    margin-top: 24px;
+    background: white; 
+    padding-bottom: 5px;
+    margin-left: auto;    // 添加左右margin为auto实现水平居中
+    margin-right: auto;
+    padding-left: 24px;   // 添加左右padding使内容更美观
+    padding-right: 24px;
+  }
+
+  .train-config-form{
+    padding-top: 15px;
+    margin-top: 24px;
+    background: white; 
+    padding-bottom: 5px;
+    width: 50%;           // 添加宽度50%
+    margin-left: auto;    // 添加左右margin为auto实现水平居中
+    margin-right: auto;
+    padding-left: 24px;   // 添加左右padding使内容更美观
+    padding-right: 24px;
+    
+  }
+  .button-group {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;  // 添加垂直居中对齐
+      padding: 0 20%;
+      margin-top: 20px;
+      height: 31px;        // 添加固定高度
+      .btn_next {
+        width: 150px;
+        height: 31px;
+        line-height: 31px;
+      }
+    }
+  .train-config-item{
+    width: 300px;
+  }
+  .card-step-list{
+    margin-top: 24px;
+    background: white; 
+  }
+
  .page-header{
     margin: 0 -24px 0;
   }
@@ -207,16 +531,37 @@ export default {
     height: 31px; line-height: 31px; 
   }
   .row{
-    height: 46px;
+    height: 35px;
+  }
+  .row_button{
+    height: 52px;
+    line-height: 52px;
   }
   .ratio{
     padding-left: 10px;
   }
   .dataset_check {
-    height: 31px; line-height: 31px; 
+    height:52; line-height: 52px; 
     text-align: center;
     button{
       width: 300px;
     }
+  }
+  .dataset_next {
+    height:52; line-height: 52px; 
+    text-align: center;
+    button{
+      width: 200px;
+    }
+  }
+  .dataset_preview_row{
+    margin-right: 20px;
+  }
+  .dataset_preview{
+
+  }
+
+  .dataset_previe_radio{
+    margin-left: 30px;
   }
 </style>
