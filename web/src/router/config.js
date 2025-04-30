@@ -279,11 +279,20 @@ const options = {
         },
         {
           name: '工作台',
-          path: 'files',
+          path: 'task',
           meta: {
             icon: 'dashboard'
           },
-          component: () => import('@/pages/files')
+          component: () => import('@/pages/task/main')
+        },
+        {
+          name: '识别结果',
+          path: 'task/result',
+          meta: {
+            icon: 'dashboard',
+            invisible: true
+          },
+          component: () => import('@/pages/task/result')
         },
         {
           name: '表格识别',

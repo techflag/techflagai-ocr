@@ -10,7 +10,8 @@ module.exports = {
   rules: {
     'vue/no-unused-components': 'warn',  // 将未使用组件的检查设为警告级别
     'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
-    'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off'
+    'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
+    'no-unused-vars': 'off'
   },
   parserOptions: {
     parser: 'babel-eslint'

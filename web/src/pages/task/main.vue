@@ -70,13 +70,16 @@ export default {
       }
       return statusMap[status] || '未知状态'
     },
-    handleEdit(id) {
+    handleCardClick(id) {
       this.$router.push({
-        path: '/recognize',
+        path: '/task/result',
         query: {
           id: id
         }
       })
+    },
+    addNew() {
+     console.log('add new')
     },
     sampleStautsOnChange(e) {
       console.log(`checked = ${e.target.value}`);
