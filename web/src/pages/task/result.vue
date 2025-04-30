@@ -125,15 +125,15 @@ export default {
     },
     boxClick(item)  {
       console.log(item)
+      // 使用组件的 ref 来访问 luckysheet 实例
+      const luckysheet = this.$refs.luckysheetRef.luckysheet;
       luckysheet.setRangeShow({row: [item.row[0], item.row[1] - 1], column: [item.col[0], item.col[1] - 1]})
 
       luckysheet.scroll({
         targetRow: item.row[0] - 4,
         targetColumn: item.col[0] - 4,
       });
-
-}
-    
+    }
   },
   
   

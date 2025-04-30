@@ -364,28 +364,6 @@ const options = {
             invisible: true
           },
           component: () => import('@/pages/structure/detail')
-        },
-        {
-          name: '系统配置',
-          path: 'sysconfig',
-          meta: {
-            icon: 'appstore-o',
-            query: {
-              name: '菜单默认参数'
-            }
-          },
-          component: () => import('@/pages/Demo')
-        },
-        {
-          name: '用户列表',
-          path: 'users',
-          meta: {
-            icon: 'file-excel',
-            query: {
-              name: '菜单默认参数'
-            }
-          },
-          component: () => import('@/pages/Demo')
         }
       ]
     },

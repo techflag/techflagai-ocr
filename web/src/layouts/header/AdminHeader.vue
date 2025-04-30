@@ -13,7 +13,7 @@
       <div :class="['admin-header-right', headerTheme]">
           <header-search class="header-item" @active="val => searchActive = val" />
           <a-tooltip class="header-item" title="帮助文档" placement="bottom" >
-            <a href="https://iczer.gitee.io/vue-antd-admin-docs/" target="_blank">
+            <a :href="helpUrl" target="_blank">
               <a-icon type="question-circle-o" />
             </a>
           </a-tooltip>
@@ -50,7 +50,8 @@ export default {
         {key: 'HK', name: '繁體中文', alias: '繁體'},
         {key: 'US', name: 'English', alias: 'English'}
       ],
-      searchActive: false
+      searchActive: false,
+      helpUrl: process.env.VUE_APP_WEBSITE + '/help/' // 添加这一行
     }
   },
   computed: {

@@ -81,9 +81,7 @@ export default {
       console.log(this.isDeployed ? '模型已上线' : '模型已下线');
     },
     openDoc() {
-      this.$router.push({
-        path: '/dataset/create',
-      })
+      window.open(process.env.VUE_APP_WEBSITE + '/help', '_blank')
     },
     handleModeConfig() {
       this.$router.push({

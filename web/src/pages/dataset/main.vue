@@ -9,9 +9,7 @@
           <span @click="showCreateModal">
             <a-icon type="plus-circle" />创建数据集
           </span>
-          <span @click="handleImport">
-            <a-icon type="upload" />导入数据
-          </span>
+          
           <span @click="openDoc">
             <a-icon type="file-text" />使用说明
           </span>
@@ -93,7 +91,7 @@ export default {
     this.$message.info('导入数据功能')
   },
   openDoc() {
-    window.open('/#/', '_blank')
+    window.open(process.env.VUE_APP_WEBSITE + '/help', '_blank')
   }
   },
   

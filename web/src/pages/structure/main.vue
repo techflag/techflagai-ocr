@@ -297,7 +297,7 @@ export default {
     this.$message.info('导入数据功能')
   },
   openDoc() {
-    window.open('/#/', '_blank')
+    window.open(process.env.VUE_APP_WEBSITE + '/help', '_blank')
   },
   handleEdit(record) {
     this.formData = {

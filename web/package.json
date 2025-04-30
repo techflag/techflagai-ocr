@@ -78,7 +78,9 @@
       "parser": "babel-eslint"
     },
     "rules": {
-      "no-unused-vars": "off"
+      "no-unused-vars": "off",
+      "vue/no-unused-vars": "off",
+      "vue/no-mutating-props": "off"
     }
   },
   "browserslist": [

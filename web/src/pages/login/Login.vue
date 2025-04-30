@@ -5,7 +5,7 @@
         <img alt="logo" class="logo" src="@/assets/img/logo.png" />
         <span class="title">{{systemName}}</span>
       </div>
-      <div class="desc">Ant Design 是西湖区最具影响力的 Web 设计规范</div>
+      <div class="desc">智能 OCR手写表格识别解决方案</div>
     </div>
     <div class="login">
       <a-form @submit="onSubmit" :form="form">
@@ -62,11 +62,7 @@
           <a-button :loading="logging" style="width: 100%;margin-top: 24px" size="large" htmlType="submit" type="primary">登录</a-button>
         </a-form-item>
         <div>
-          其他登录方式
-          <a-icon class="icon" type="alipay-circle" />
-          <a-icon class="icon" type="taobao-circle" />
-          <a-icon class="icon" type="weibo-circle" />
-          <router-link style="float: right" to="/dashboard/workplace" >注册账户</router-link>
+          <!--其他登录方式-->
         </div>
       </a-form>
     </div>

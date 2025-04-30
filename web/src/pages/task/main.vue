@@ -2,9 +2,9 @@
   <div style="background-color: white;">
     <a-card :bordered="false">
       <div style="display: flex; flex-wrap: wrap">
-          <head-info title="我的待办" content="8个任务" :bordered="true"/>
-          <head-info title="本周任务平均处理时间" content="32分钟" :bordered="true"/>
-          <head-info title="本周完成任务数" content="24个"/>
+          <head-info title="进行中" content="8条" :bordered="true"/>
+          <head-info title="已完成" content="32条" :bordered="true"/>
+          <head-info title="异常" content="24条"/>
       </div>
     </a-card>
     <a-divider style="margin-top: 0px;margin-bottom: 0px;background: rgb(240 240 240);" />
@@ -15,6 +15,7 @@
             <a-radio-button value="all">全部</a-radio-button>
             <a-radio-button value="ext">进行中</a-radio-button>
             <a-radio-button value="lable">已完成</a-radio-button>
+            <a-radio-button value="lable">异常</a-radio-button>
           </a-radio-group>
         </a-col>
         
@@ -46,6 +47,54 @@
     <div class="pagination-container">
       <a-pagination v-model="current" :total="50" show-less-items />
     </div>
+
+    <a-modal 
+      v-model="open" 
+      title="上传数据" 
+      @ok="handleOk" 
+      width="700px"
+      :destroyOnClose="true"
+    >
+      <template #footer>
+        <a-button key="back" @click="handleCancel">取消</a-button>
+        <a-button key="submit" type="primary" :loading="loading" @click="handleOk">提交</a-button>
+      </template>
+      <a-row>
+        <a-col :span="12">
+          <div class="dataset-upload">
+            <div class="upload-label">
+            <span class="label">任务名称</span>
+            </div>
+            <div class="upload-content">
+              <a-input placeholder="输入任务名称"  v-model="taskName"  style="width:300px" />
+          </div>
+          </div>
+        </a-col>
+      </a-row>
+      <a-row style="margin-top: 10px;">
+        <a-col :span="12">
+          <div class="dataset-upload">
+            <div class="upload-label">
+              <span class="label">选择文件:</span>
+            </div>
+            <div class="upload-content">
+              <a-upload-dragger
+                    v-model="fileList"
+                    name="file"
+                    :multiple="true"
+                    action="https://www.mocky.io/v2/5cc8019d300000980a055e76"
+                    @change="handleChange"
+                  >
+                    <p class="ant-upload-drag-icon">
+                      <a-icon type="file-add" theme="twoTone" />
+                    </p>
+                    <p class="ant-upload-text">点击或拖拽文件到此区域上传</p>
+                  </a-upload-dragger>
+            </div>
+          </div>
+        </a-col>
+      </a-row>
+    </a-modal>
     
   </div>
 </template>
@@ -59,6 +108,10 @@ export default {
     return {
       current: 1,
       status: 2, // 添加状态字段
+      taskName: '',
+      fileList: [],
+      open: false,
+      loading: false,
     }
   },
   methods: {
@@ -79,11 +132,25 @@ export default {
       })
     },
     addNew() {
-     console.log('add new')
+     this.open = true;
     },
     sampleStautsOnChange(e) {
       console.log(`checked = ${e.target.value}`);
     },
+    handleCancel() {
+      this.open = false;
+    },
+    handleOk() {
+      this.$message.success('上传成功');
+      this.loading = true;
+      setTimeout(() => {
+        this.loading = false;
+        this.open = false;
+      }, 3000);
+    },
+    handleChange(info) {
+        console.log(info);
+    }
   }
 }
 </script>
