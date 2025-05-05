@@ -25,7 +25,7 @@
             <a-form-item>
               <a-input
                 size="large"
-                placeholder="888888"
+                placeholder="admin123"
                 autocomplete="autocomplete"
                 type="password"
                 v-decorator="['password', {rules: [{ required: true, message: '请输入密码', whitespace: true}]}]"
@@ -107,21 +107,22 @@ export default {
     afterLogin(res) {
       this.logging = false
       const loginRes = res.data
-      if (loginRes.code >= 0) {
+      console.log(loginRes)
+      if (loginRes.code == 200) {
         const {user, permissions, roles} = loginRes.data
-        this.setUser(user)
-        this.setPermissions(permissions)
-        this.setRoles(roles)
-        setAuthorization({token: loginRes.data.token, expireAt: new Date(loginRes.data.expireAt)})
+        this.setUser(loginRes.data.username)
+        this.setPermissions([{id: 'queryForm', operation: ['add', 'edit']}])
+        this.setRoles([{id: 'admin', operation: ['add', 'edit', 'delete']}])
+        setAuthorization({token: loginRes.data.access_token, expireAt: new Date(loginRes.data.expireAt)})
         // 获取路由配置
         getRoutesConfig().then(result => {
           const routesConfig = result.data.data
           loadRoutes(routesConfig)
           this.$router.push('/task')
-          this.$message.success(loginRes.message, 3)
+          this.$message.success(loginRes.msg, 3)
         })
       } else {
-        this.error = loginRes.message
+        this.error = loginRes.msg
       }
     }
   }

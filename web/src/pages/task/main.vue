@@ -2,20 +2,20 @@
   <div style="background-color: white;">
     <a-card :bordered="false">
       <div style="display: flex; flex-wrap: wrap">
-          <head-info title="进行中" content="8条" :bordered="true"/>
-          <head-info title="已完成" content="32条" :bordered="true"/>
-          <head-info title="异常" content="24条"/>
+          <head-info title="进行中" :content="`${statusCounts['0']}条`" :bordered="true"/>
+          <head-info title="已完成" :content="`${statusCounts['1']}条`" :bordered="true"/>
+          <head-info title="异常" :content="`${statusCounts['2']}条`"/>
       </div>
     </a-card>
     <a-divider style="margin-top: 0px;margin-bottom: 0px;background: rgb(240 240 240);" />
     <a-card :bordered="false" class="search-form">
       <a-row>
         <a-col :span="16">
-          <a-radio-group default-value="all" button-style="solid"  @change="sampleStautsOnChange">
-            <a-radio-button value="all">全部</a-radio-button>
-            <a-radio-button value="ext">进行中</a-radio-button>
-            <a-radio-button value="lable">已完成</a-radio-button>
-            <a-radio-button value="lable">异常</a-radio-button>
+          <a-radio-group default-value="" button-style="solid"  @change="sampleStautsOnChange">
+            <a-radio-button value="">全部</a-radio-button>
+            <a-radio-button value="0">进行中</a-radio-button>
+            <a-radio-button value="1">已完成</a-radio-button>
+            <a-radio-button value="2">异常</a-radio-button>
           </a-radio-group>
         </a-col>
         
@@ -29,14 +29,15 @@
     <a-list
       :grid='{ gutter: 24, xl: 8, lg: 3, md: 3, sm: 2, xs: 1 }'
       style="padding: 10px;background: white;"
+      :loading="listLoading"
     >
-      <a-list-item :key="n" v-for="n in 18" style="padding: 0 4px">
-        <a-card @click="handleCardClick(n)" class="card-list">
-          <img slot="cover" src="https://gw.alipayobjects.com/zos/rmsportal/iZBVOIhGJiAnhplqjvZW.png" height="154"/>
-          <a-card-meta title="测试任务">
+      <a-list-item :key="task.id" v-for="task in taskList" style="padding: 0 4px">
+        <a-card @click="handleCardClick(task.id)" class="card-list">
+          <img slot="cover" :src="getTaskImage(task.upload_image)" height="154"/>
+          <a-card-meta :title="task.name">
             <div slot="description" style="font-size: 12px;">
-              <div> <span :style="{color: status === 1 ? 'green' : status === 2 ? 'red' : 'inherit'}">{{getStatusText(status)}}</span></div>
-              <div> 2025-04-29 16:38:02</div>
+              <div> <span :style="{color: status === 1 ? 'green' : status === 2 ? 'red' : 'inherit'}">{{getStatusText(task.status)}}</span></div>
+              <div>{{ task.update_time }}</div>
             </div>
           </a-card-meta>
         </a-card>
@@ -45,7 +46,7 @@
     
     <!-- 使用清除浮动确保分页在列表下方 -->
     <div class="pagination-container">
-      <a-pagination v-model="current" :total="50" show-less-items />
+      <a-pagination v-model="current" :show-total="total => `共 ${total} 条记录`" :page-size.sync="pageSize" :total="taskTotal" show-less-items  @change="onPageChange"/>
     </div>
 
     <a-modal 
@@ -101,20 +102,58 @@
 
 <script>
 import HeadInfo from '@/components/tool/HeadInfo'
+import { 
+  query, 
+  save, 
+  dataSetupload, 
+  readExcel, 
+  submit, 
+  test, 
+  list,  // 修改为list
+  find,
+  statusCount 
+} from '@/services/tasks'
+
 export default {
-  name: 'StandardList',
+  name: 'TasksList',
   components: {HeadInfo},
   data() {
     return {
       current: 1,
-      status: 2, // 添加状态字段
+      taskTotal: 0,
+      status: 2,
       taskName: '',
       fileList: [],
       open: false,
       loading: false,
+      pageSize: 16,
+      taskList: [],
+      listLoading: false,
+      statusCounts: {
+        "0": 0,
+        "1": 0,
+        "2": 0
+      }
     }
   },
+  created() {
+    this.fetchTasks()
+    this.fetchStatusCount()
+  },
   methods: {
+    async fetchStatusCount() {
+      try {
+        const res = await statusCount()
+        this.statusCounts = res.data.data
+      } catch (error) {
+        console.error('获取状态统计失败', error)
+      }
+    },
+    onPageChange(page) {
+      this.current = page
+      this.fetchTasks()
+    },
+    
     getStatusText(status) {
       const statusMap = {
         0: '进行中',
@@ -135,22 +174,77 @@ export default {
      this.open = true;
     },
     sampleStautsOnChange(e) {
-      console.log(`checked = ${e.target.value}`);
+      this.current = 1
+      const params = {}
+      if (e.target.value !== '') {
+        params.status = e.target.value
+      }
+      this.fetchTasks(params)
     },
+    async fetchTasks(params = {}) {
+      this.listLoading = true
+      try {
+        const res = await list({ 
+          page: this.current,
+          size: this.pageSize,
+          ...params 
+        })
+        let taskdata = res.data.data
+        if (!taskdata || !taskdata.record || taskdata.record.length === 0) {
+          this.taskList = []
+          this.$message.warning('暂无任务数据')
+          return
+        }
+        this.taskList = taskdata.record
+        this.taskTotal = taskdata.total
+        this.current = taskdata.page
+      } catch (error) {
+        this.$message.error('获取任务列表失败')
+      } finally {
+        this.listLoading = false
+      }
+    },
+    
     handleCancel() {
       this.open = false;
     },
-    handleOk() {
-      this.$message.success('上传成功');
-      this.loading = true;
-      setTimeout(() => {
-        this.loading = false;
-        this.open = false;
-      }, 3000);
+    async handleOk() {
+      if (!this.taskName) {
+        this.$message.warning('请输入任务名称')
+        return
+      }
+      if (this.fileList.length === 0) {
+        this.$message.warning('请选择上传文件')
+        return
+      }
+
+      this.loading = true
+      try {
+        await save({
+          taskName: this.taskName
+        }, this.fileList[0])
+        this.$message.success('上传成功')
+        this.fetchTasks() // 刷新列表
+      } catch (error) {
+        this.$message.error('上传失败')
+      } finally {
+        this.loading = false
+        this.open = false
+        this.taskName = ''
+        this.fileList = []
+      }
     },
     handleChange(info) {
-        console.log(info);
+      if (info.file.status === 'done') {
+        this.fileList = [info.file.originFileObj]
+      }
+    },
+    getTaskImage(uploadImage) {
+    if (!uploadImage) {
+      return 'https://gw.alipayobjects.com/zos/rmsportal/iZBVOIhGJiAnhplqjvZW.png'
     }
+    return `${process.env.VUE_APP_API_BASE_URL}/file/${uploadImage}`
+  },
   }
 }
 </script>
@@ -172,4 +266,6 @@ export default {
     padding: 16px 0;
     background: #fff;
   }
+
+
 </style>

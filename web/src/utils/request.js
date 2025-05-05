@@ -3,6 +3,7 @@ import Cookie from 'js-cookie'
 
 // 跨域认证信息 header 名
 const xsrfHeaderName = 'Authorization'
+const BASE_URL = process.env.VUE_APP_API_BASE_URL || ''
 
 axios.defaults.timeout = 5000
 axios.defaults.withCredentials= true
@@ -31,13 +32,14 @@ const METHOD = {
  * @returns {Promise<AxiosResponse<T>>}
  */
 async function request(url, method, params, config) {
+  const fullUrl = `${BASE_URL}${url}`
   switch (method) {
     case METHOD.GET:
-      return axios.get(url, {params, ...config})
+      return axios.get(fullUrl, {params, ...config})
     case METHOD.POST:
-      return axios.post(url, params, config)
+      return axios.post(fullUrl, params, config)
     default:
-      return axios.get(url, {params, ...config})
+      return axios.get(fullUrl, {params, ...config})
   }
 }
 
