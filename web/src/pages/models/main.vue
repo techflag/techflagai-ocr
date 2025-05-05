@@ -20,61 +20,75 @@
     <div class="card-list">
     
     <a-list itemLayout="vertical">
-      <a-list-item :key="n" v-for="n in 10" style="position: relative;">
-          <a-button v-if="trainStatus === 'finished'" size="small" type="primary" class="deployed" @click="toggleDeployment" style="color: white;">
-            {{ isDeployed ? '下线' : '发布上线' }}
-          </a-button>
-          <a-list-item-meta title="张三的刷脸大模型">
-            <div slot="description" v-if="trainStatus === 'finished'">
-              <a-tag>准确率（Accuracy）：80%</a-tag>
-              <a-tag>精确率（Precision）：80%</a-tag>
-              <a-tag>召回率（Recall）：80%</a-tag>
-              <a-tag>F1分数（F1 Score）：80%</a-tag>
-              <a-tag>均方误差（MSE）：80%</a-tag>
-              <a-tag>均方根误差（RMSE）：80%</a-tag>
-              <a-tag>平均绝对误差（MAE）：80%</a-tag>
-            </div>
-            
-          </a-list-item-meta>
-          <div class="content">
-            <div class="detail">
-              
-            </div>
-            
-            <div class="train-status" style="margin-top: 12px;">
-              <span>训练状态：</span>
-              <a-tag v-if="trainStatus === 'processing'" color="blue">训练中</a-tag>
-              <a-tag v-else-if="trainStatus === 'stopped'" color="red">已停止</a-tag>
-              <a-tag v-else-if="trainStatus === 'finished'" color="green">已完成</a-tag>
-              <a-button size="small" type="primary" style="margin-left: 16px;">查看日志</a-button>
-            </div>
+      <a-list-item :key="item.id" v-for="item in modelsList" style="position: relative;">
+        <a-button 
+          v-if="item.status === 2" 
+          size="small" 
+          type="primary" 
+          class="deployed" 
+          @click="toggleDeployment(item)"
+          style="color: white;"
+        >
+          {{ item.use_status === 1 ? '下线' : '发布上线' }}
+        </a-button>
+        <a-list-item-meta :title="item.name">
+          <div slot="description" v-if="item.status === 2">
+            <a-tag v-if="item.acc">准确率（Accuracy）：{{item.acc}}</a-tag>
+            <a-tag>训练集占比：{{item.train_set}}%</a-tag>
+            <a-tag>测试集占比：{{item.val_set}}%</a-tag>
+            <a-tag>状态：
+              <span v-if="item.status === 0">配置中</span>
+              <span v-if="item.status === 1">运行中</span>
+              <span v-if="item.status === 2">运行完成</span>
+              <span v-if="item.status === 3">已取消</span>
+            </a-tag>
           </div>
-          
-        </a-list-item>
-      </a-list>
+        </a-list-item-meta>
+        <div class="content">
+          <div class="train-status" style="margin-top: 12px;">
+            <span>更新时间：{{item.update_time}}</span>
+            <a-button size="small" type="primary" style="margin-left: 16px;">查看日志</a-button>
+          </div>
+        </div>
+      </a-list-item>
+    </a-list>
   </div>
-  <a-pagination v-model="current" :total="50" show-less-items />
-  </div>
+  <div class="pagination-container">
+  <a-pagination v-model="current" :total="modelsLisTotal" :show-total="total => `共 ${total} 条记录`"  @change="onPageChange" show-less-items  />
+  </div>  
+</div>
 
   
 </template>
 
 <script>
 import PageHeader from '@/components/page/header/PageHeader'
+import { find, list } from '@/services/models'
 
 export default {
-  name: 'CardList',
+  name: 'ModelsList',
   components: {PageHeader},
   
   data () {
     return {
-      current: 2,
       desc: '本OCR模型的训练结果显示出良好的性能指标。模型在识别正确样本方面表现出色，准确率（Accuracy）为80%。精确率（Precision）和召回率（Recall）均为80%，表明模型在识别正样本时的准确性和覆盖率都达到了较高水平。F1分数（F1 Score）为80%，综合了精确率和召回率的表现。均方误差（MSE）和均方根误差（RMSE）均为80%，显示出模型在预测误差方面的稳定性。平均绝对误差（MAE）为80%，进一步验证了模型的预测精度。当前训练状态为：训练中，表明模型仍在持续优化中。',
       trainStatus: 'finished',
       isDeployed: false, // 默认未上线
+      current:1,
+      pageSize: 10,
+      listLoading: false,
+      modelsLisTotal: 0,
+      modelsList: []
     }
   },
+  created() {
+    this.fetchModels()
+  },
   methods: {
+    onPageChange(page) {
+      this.current = page
+      this.fetchModels()
+    },
     toggleDeployment() {
       this.isDeployed = !this.isDeployed;
       // 在这里添加发布上线或下线的逻辑
@@ -89,6 +103,21 @@ export default {
       })
     },
     
+    async fetchModels() {
+      this.listLoading = true
+      try {
+        const res = await list({
+          page: this.current,
+          size: this.pageSize
+        })
+        this.modelsList = res.data.data.record || []
+        this.modelsLisTotal = res.data.data.total || 0
+      } catch (error) {
+        this.$message.error('获取模型列表失败')
+      } finally {
+        this.listLoading = false
+      }
+    },
   }
 }
 </script>
@@ -161,5 +190,13 @@ export default {
   .deployed {
     color: white;
     position: absolute;top: 25px;right: 65px;
+  }
+
+  .pagination-container {
+    clear: both; /* 清除浮动 */
+    width: 100%;
+    text-align: center;
+    padding: 16px 0;
+    background: #fff;
   }
 </style>

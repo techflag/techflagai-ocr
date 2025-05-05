@@ -326,7 +326,7 @@ const options = {
           meta: {
             icon: 'profile'
           },
-          component: () => import('@/pages/models/list')
+          component: () => import('@/pages/models/main')
         },
         {
           name: '模型训练配置',

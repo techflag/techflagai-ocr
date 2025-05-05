@@ -38,7 +38,7 @@ module.exports = {
   devServer: {
     proxy: {
       '/api': {
-        target: 'http://117.73.9.156:8083', // 目标服务端地址
+        target: process.env.VUE_APP_API_BASE_URL, // 目标服务端地址
         changeOrigin: true,
         pathRewrite: {
           '^/api': '/api' // 如果你的后端接口路径前面有/api就这样写，否则可以写成''

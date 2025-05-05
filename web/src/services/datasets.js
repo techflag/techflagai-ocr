@@ -1,39 +1,33 @@
 import {request} from '@/utils/request'
 
-/**
- * 获取数据集信息
- * @param {string} dataset_url - 数据集URL
- * @returns {Promise} - 返回请求Promise
- */
-export function getDataset(dataset_url) {
+export function find(data) {
   return request(
-    '/api/api/datasets/find',
+    '/ocr/dataset/find',
     'get',
-    { dataset_url }
-  ).then(response => {
-    try {
-      return response;
-    } catch (e) {
-      console.error('Error parsing response:', e);
-      return response;
-    }
-  })
-  .catch(error => {
-    console.error('Error fetching dataset:', error);
-    throw error;
-  });
+    data
+  )
 }
 
-/**
- * 更新数据集信息
- * @param {string} filename - 数据集文件名
- * @param {Object} data - 更新的数据
- * @returns {Promise} - 返回请求Promise
- */
-export function updateDataset(filename, data) {
-  return request({
-    url: `/api/datasets/${filename}`,
-    method: 'post',
+export function list(data) {
+  return request(
+    '/ocr/dataset/list',
+    'get',
     data
-  })
+  )
+}
+
+export function add(data) {
+  return request(
+    '/ocr/dataset/add',
+    'post',
+    data
+  )
+}
+
+export function deleteDataset(data) {
+  return request(
+    '/ocr/dataset/delete',
+    'post',
+    data
+  )
 }

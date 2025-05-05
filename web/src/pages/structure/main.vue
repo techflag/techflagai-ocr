@@ -7,7 +7,7 @@
         <p>{{desc}}</p>
         <div class="link">
           <span @click="addNew">
-            <a-icon type="plus-circle" />创建数据集
+            <a-icon type="plus-circle" />创建新规则
           </span>
           <span @click="openDoc">
             <a-icon type="file-text" />使用说明
@@ -23,12 +23,11 @@
       
       <standard-table
         :columns="columns"
-        :dataSource="dataSource"
+        :dataSource="structureList"
         :selectedRows.sync="selectedRows"
         @clear="onClear"
         @change="onChange"
         :pagination="{...pagination, onChange: onPageChange}"
-        @selectedRowChange="onSelectChange"
       >
         <div slot="description" slot-scope="{text}">
           {{text}}
@@ -69,7 +68,12 @@
               <span class="label">名称：</span>
             </div>
             <div class="upload-content">
-              <a-input v-model="formData.name" placeholder="请输入名称" style="width: 100%" />
+              <a-input 
+                v-model="formData.name" 
+                placeholder="请输入名称" 
+                style="width: 100%"
+                :rules="[{ required: true, message: '请输入名称', trigger: 'blur' }]"
+              />
             </div>
           </div>
         </a-col>
@@ -85,7 +89,8 @@
                 v-model="formData.output_excel" 
                 placeholder="请输入模板文件路径"
                 :rows="4"
-                style="width: 100%" 
+                style="width: 100%"
+                :rules="[{ required: true, message: '请输入模板文件路径', trigger: 'blur' }]"
               />
             </div>
           </div>
@@ -98,10 +103,15 @@
               <span class="label">类型：</span>
             </div>
             <div class="upload-content">
-              <a-select v-model="formData.type" placeholder="请选择类型" style="width: 100%">
-                <a-select-option :value="0">原料进厂</a-select-option>
-                <a-select-option :value="1">原料检验</a-select-option>
-                <a-select-option :value="2">产品检验</a-select-option>
+              <a-select 
+                v-model="formData.type" 
+                placeholder="请选择类型" 
+                style="width: 100%"
+                @change="handleTypeChange"
+              >
+                <a-select-option :value="1">原料进厂</a-select-option>
+                <a-select-option :value="2">原料检验</a-select-option>
+                <a-select-option :value="3">产品检验</a-select-option>
               </a-select>
             </div>
           </div>
@@ -117,6 +127,7 @@
 <script>
 import PageHeader from '@/components/page/header/PageHeader'
 import StandardTable from '@/components/table/StandardTable'
+import { list, find, save_or_update ,deleteRecord} from '@/services/structure'
 
 const columns = [
   {
@@ -133,9 +144,9 @@ const columns = [
     dataIndex: 'type',
     customRender: (text) => {
       const typeMap = {
-        0: '原料进厂',
-        1: '原料检验',
-        2: '产品检验'
+        1: '原料进厂',
+        2: '原料检验',
+        3: '产品检验'
       }
       return typeMap[text] || text
     }
@@ -152,13 +163,13 @@ const columns = [
 ]
 
 export default {
-  name: 'CardList',
+  name: 'StructureList',
   components: {PageHeader,StandardTable},
   data () {
     return {
-      current:2,
+      current:1,
       desc: '数据结构化转换是OCR识别后的关键环节。本功能支持将OCR识别后的Excel文件，通过灵活的JSON规则映射，实现数据的智能提取和结构化转换。可处理多种类型的文档，包括表格、发票、合同等，并可自定义转换规则，确保数据能高效、准确地对接到第三方系统。',
-      dataSource:[],
+      structureList:[],
       advanced: true,
       columns: columns,
       selectedRows: [],
@@ -176,9 +187,7 @@ export default {
       }
     }
   },
-  authorize: {
-    deleteRecord: 'delete'
-  },
+  
   mounted() {
     this.getData()
   },
@@ -188,81 +197,48 @@ export default {
       this.pagination.pageSize = pageSize
       this.getData()
     },
-    getData() {
-      // 模拟接口返回数据
-      const mockData = {
-        code: 200,
-        msg: "success",
-        data: {
-          total: 6,
-          list: [
-            {
-              id: 5,
-              name: "玻璃纤维液体过滤纸检验记录(半成品)",
-              output_excel: "temp/05.xlsx",
-              type: 2,
-              update_time: "2025-03-21T17:18:19"
-            },
-            {
-              id: 4,
-              name: "玻璃纤维空气过滤纸检验记录(半成品)",
-              output_excel: "temp/04_02.xlsx",
-              type: 2,
-              update_time: "2025-04-01T10:17:13"
-            },
-            {
-              id: 6,
-              name: "玻璃纤维空气过滤纸检验记录(成品)",
-              output_excel: "temp/04_01.xlsx",
-              type: 2,
-              update_time: "2025-04-01T09:11:57"
-            },
-            {
-              id: 3,
-              name: "原料进厂检验表Ⅲ",
-              output_excel: "temp/03_02.xlsx",
-              type: 1,
-              update_time: "2025-04-22T06:42:31"
-            },
-            {
-              id: 2,
-              name: "原料进厂检验表Ⅱ",
-              output_excel: "temp/02_01.xlsx",
-              type: 0,
-              update_time: "2025-04-01T10:17:13"
-            },
-            {
-              id: 1,
-              name: "原料进厂检验表I",
-              output_excel: "temp/01.xlsx",
-              type: 0,
-              update_time: "2025-04-01T07:31:57"
-            }
-          ]
+    async getData() {
+      try {
+        const res = await list({
+          page: this.pagination.current,
+          size: this.pagination.pageSize
+        })
+        const structureRes = res.data
+        if (structureRes.code === 200) {
+          const { total, record } = structureRes.data
+          this.structureList = record.map(item => ({
+            ...item,
+            key: item.id
+          }))
+          this.pagination.total = total
         }
-      };
-  
-      // 处理数据
-      if (mockData.code === 200) {
-        const { total, list } = mockData.data;
-        this.dataSource = list.map(item => ({
-          ...item,
-          key: item.id // 为每条数据添加唯一的key
-        }));
-        this.pagination.total = total;
+      } catch (error) {
+        this.$message.error('获取结构化规则列表失败')
       }
     },
-    deleteRecord(key) {
-      this.dataSource = this.dataSource.filter(item => item.key !== key)
-      this.selectedRows = this.selectedRows.filter(item => item.key !== key)
-    },
-    toggleAdvanced () {
-      this.advanced = !this.advanced
-    },
-    remove () {
-      this.dataSource = this.dataSource.filter(item => this.selectedRows.findIndex(row => row.key === item.key) === -1)
-      this.selectedRows = []
-    },
+  deleteRecord(key) {
+    this.$confirm({
+      title: '确认删除',
+      content: '确定要删除这条记录吗？',
+      okText: '确认',
+      cancelText: '取消',
+      onOk: () => {
+        deleteRecord({id: key}).then(res => {
+          if (res.data.code === 200) {
+            this.$message.success('删除成功')
+            this.getData()
+          } else {
+            this.$message.error('删除失败')
+          }
+        })
+      },
+      onCancel: () => {
+        this.$message.info('已取消删除')
+      }
+    })
+  },
+
+
     onClear() {
       this.$message.info('您清空了勾选的所有行')
     },
@@ -272,30 +248,37 @@ export default {
     onChange() {
       this.$message.info('表格状态改变了')
     },
-    onSelectChange() {
-      this.$message.info('选中行改变了')
-    },
+
     addNew () {
+      this.formData = {'json_content':{}}
       this.open = true
     },
     handleOk() {
+      if (!this.formData.name) {
+        this.$message.error('请输入名称')
+        return
+      }
+      if (!this.formData.output_excel) {
+        this.$message.error('请输入模板文件路径')
+        return
+      }
+      
       this.loading = true;
-      // 移除焦点
-      document.activeElement.blur();
-      setTimeout(() => {
-        this.loading = false;
-        this.open = false;
-      }, 3000);
+      save_or_update(this.formData).then(res => {
+        if (res.data.code === 200) {
+          this.$message.success('保存成功')
+          this.getData()
+        } else {
+          this.$message.error(res.data.msg)
+        }
+      })
+      this.loading = false;
+      this.open = false;
     },
     handleCancel() {
       this.open = false
     },
-    
-  
-  handleImport() {
-    // 这里处理导入数据逻辑
-    this.$message.info('导入数据功能')
-  },
+   
   openDoc() {
     window.open(process.env.VUE_APP_WEBSITE + '/help', '_blank')
   },
@@ -305,7 +288,10 @@ export default {
     }
     this.open = true
   },
-  
+  handleTypeChange(value) {
+   this.formData.type = value
+  },
+    
     
   },
   

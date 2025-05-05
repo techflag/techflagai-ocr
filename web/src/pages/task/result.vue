@@ -44,9 +44,10 @@
 import Luckysheet from "@/components/Luckysheet/index.vue";
 import Recognition from "@/components/ocr/Recognition.vue";
 import IncImg from "@/components/IncImg";
-import { setAuthorization } from '@/utils/request';
-import axios from 'axios';
-
+import { 
+  save, 
+  readExcel, 
+} from '@/services/tasks'
 export default {
   name: 'TaskResult',
   components: {
@@ -58,8 +59,8 @@ export default {
     return {
       form: {
         id: undefined,
-        output_excel: 'temp_05.xlsx',
-        output_image:'http://47.99.148.195:7090/api/file/showFile?name=024a464cc2a543ac89c206229de7a60a/e09645a509634bf499b25538c188be6a_org.png',
+        output_excel: '',
+        output_image:'',
         output_json:{},
         json_content: {}
       },
@@ -89,24 +90,23 @@ export default {
   methods: {
     async getTaskDetail() {
       try {
-        // 设置临时认证信息
-        setAuthorization({
-          token: 'eyJhbGciOiJIUzUxMiJ9.eyJsb2dpbl91c2VyX2tleSI6IjExNTc5ZmFmLTg3ZDktNDVlYy1hMDVjLTNlNDM2OGU1YmEzMSJ9.4HZX6a0V0-hL5dVDPNWJsPodO77qKqnHLv6wZawogotTCpM59XU7j6JFh13wQprvaxuKGiSHximcTpSmsPWmQg'
-        });
-        
-        const response = await axios.get('http://47.99.148.195:7080/ocr/task/find', {
-          params: {
-            id: '024a464cc2a543ac89c206229de7a60a'
-          }
-        });
+        const taskId = this.$route.query.id
+        if (!taskId) {
+          this.$message.error('缺少任务ID参数')
+          return
+        }
+        const response = await find({ id: taskId })
         
         if (response.data) {
           console.log('response.data:', response.data);
           this.form.output_json = response.data.data.output_json;
           console.log('JSON content:', this.form.output_json);
+          this.form.output_image = response.data.data.output_image;
+          this.form.output_excel = response.data.data.output_excel;
         }
       } catch (error) {
-        this.$message.error('获取任务详情失败：' + error.message);
+        const errorMsg = error.response?.data?.message || error.message
+    this.$message.error(`获取任务详情失败：${errorMsg}`)
       }
     },
     

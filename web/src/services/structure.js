@@ -1,12 +1,13 @@
-import request from '@/utils/request.js'
+import {request} from '@/utils/request.js'
 
-export function page(data) {
+export function list(data) {
     return request(
-        '/ocr/structure/page',
+        '/ocr/structure/list',
         'get',
          data
     )
 }
+
 
 export function find(data) {
     return request(
@@ -22,5 +23,13 @@ export function save_or_update(data) {
         '/ocr/structure/save_or_update',
          'post',
          data
+    )
+}
+
+export function deleteRecord(data) {
+    return request(
+        '/ocr/structure/delete',
+        'post',
+        data
     )
 }
