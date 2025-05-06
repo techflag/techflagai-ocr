@@ -103,7 +103,8 @@ methods: {
 
   async downloadExcel() {
     try {
-    const res = await fetch('http://47.99.148.195:7090/api/file/showFile?name=temp%2F05.xlsx')
+    const res = await fetch('http://47.99.148.195:7090/api/file/showFile?name=' + this.name)
+    //const res = await fetch(process.env.VUE_APP_FILE_BASE_URL + this.name)
     const blob = await res.blob()
     const file = new File([blob], 'test.xlsx', {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'

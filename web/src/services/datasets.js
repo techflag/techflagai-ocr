@@ -18,7 +18,7 @@ export function list(data) {
 
 export function add(data) {
   return request(
-    '/ocr/dataset/add',
+    '/ocr/dataset/save',
     'post',
     data
   )

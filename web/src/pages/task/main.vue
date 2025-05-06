@@ -10,7 +10,7 @@
     <a-divider style="margin-top: 0px;margin-bottom: 0px;background: rgb(240 240 240);" />
     <a-card :bordered="false" class="search-form">
       <a-row>
-        <a-col :span="16">
+        <a-col :span="6">
           <a-radio-group default-value="" button-style="solid"  @change="sampleStautsOnChange">
             <a-radio-button value="">全部</a-radio-button>
             <a-radio-button value="0">进行中</a-radio-button>
@@ -18,10 +18,46 @@
             <a-radio-button value="2">异常</a-radio-button>
           </a-radio-group>
         </a-col>
-        
+        <a-col :span="6">
+          <div style="display: inline-block; margin-right: 8px; line-height: 32px;">任务名称:</div>
+          <a-select 
+            v-model="selectedTaskName" 
+            placeholder="选择任务名称" 
+            style="width: 200px"
+            @change="handleTaskNameChange"
+          >
+            <a-select-option value="">全部</a-select-option>
+            <a-select-option 
+              v-for="name in taskNameList" 
+              :key="name" 
+              :value="name"
+            >
+              {{ name }}
+            </a-select-option>
+          </a-select>
+        </a-col>
+        <a-col :span="4" style="text-align: right;">
+          <div style="display: inline-block; margin-right: 8px; line-height: 32px;">数据集:</div>
+          <a-select 
+            v-model="data_set_id" 
+            placeholder="选择数据集" 
+            style="width: 200px"
+            @change="handleDatasetChange"
+          >
+          <a-select-option value="">全部</a-select-option>
+            <a-select-option 
+              v-for="dataset in datasetList" 
+              :key="dataset.id" 
+              :value="dataset.id"
+            >
+              {{ dataset.name }}
+            </a-select-option>
+          </a-select>
+        </a-col>
         <a-col :span="8" style="text-align: right;">
           <a-button @click="addNew" type="primary">上传数据</a-button>
         </a-col>
+        
       </a-row>
     </a-card>
     
@@ -38,8 +74,9 @@
             <div slot="description" style="font-size: 12px;">
               <div> <span :style="{color: status === 1 ? 'green' : status === 2 ? 'red' : 'inherit'}">{{getStatusText(task.status)}}</span></div>
               <div>{{ task.update_time }}</div>
-            </div>
-          </a-card-meta>
+              <div><a-tag color="blue">{{task.data_set_name}}</a-tag></div>
+          </div>
+        </a-card-meta>
         </a-card>
       </a-list-item>
     </a-list>
@@ -103,17 +140,11 @@
 <script>
 import HeadInfo from '@/components/tool/HeadInfo'
 import { 
-  query, 
   save, 
-  dataSetupload, 
-  readExcel, 
-  submit, 
-  test, 
   list,  // 修改为list
-  find,
-  statusCount 
+  statusCount ,task_names
 } from '@/services/tasks'
-
+import {  list as datasetList } from '@/services/datasets'
 export default {
   name: 'TasksList',
   components: {HeadInfo},
@@ -133,12 +164,18 @@ export default {
         "0": 0,
         "1": 0,
         "2": 0
-      }
+      },
+      data_set_id: '',
+      datasetList: [],
+      selectedTaskName: '',
+      taskNameList: []
     }
   },
   created() {
     this.fetchTasks()
     this.fetchStatusCount()
+    this.fetchDatasets() // 初始化时加载数据集列表
+    this.fetchTaskNames()
   },
   methods: {
     async fetchStatusCount() {
@@ -240,12 +277,45 @@ export default {
       }
     },
     getTaskImage(uploadImage) {
-    if (!uploadImage) {
-      return 'https://gw.alipayobjects.com/zos/rmsportal/iZBVOIhGJiAnhplqjvZW.png'
-    }
-    return `${process.env.VUE_APP_API_BASE_URL}/file/${uploadImage}`
+      if (!uploadImage) {
+        return 'https://gw.alipayobjects.com/zos/rmsportal/iZBVOIhGJiAnhplqjvZW.png'
+      }
+      return `${process.env.VUE_APP_API_BASE_URL}/file/${uploadImage}`
   },
+  handleDatasetChange(value) {
+      this.current = 1
+      const params = {}
+      if (value !== '') {
+        params.data_set_id = value
+      }
+      this.fetchTasks(params)
+  },
+  async fetchDatasets() {
+      try {
+        const res = await datasetList() // 调用数据集列表接口
+        this.datasetList = res.data.data.record || []
+      } catch (error) {
+        this.$message.error('获取数据集列表失败')
+      }
+  },
+  async fetchTaskNames() {
+    try {
+      const res = await task_names()
+      console.log(res)
+      this.taskNameList = res.data.data || []
+    } catch (error) {
+      this.$message.error('获取任务名称列表失败')
+    }
+  },
+  handleTaskNameChange(value) {
+    this.current = 1
+    const params = {}
+    if (value !== '') {
+      params.name = value
+    }
+    this.fetchTasks(params)
   }
+}
 }
 </script>
 

@@ -87,3 +87,11 @@ export function update(data) {
          data
     )
 }
+
+
+export function task_names() {
+    return request(
+        '/ocr/task/names',
+        'get'
+    )
+}

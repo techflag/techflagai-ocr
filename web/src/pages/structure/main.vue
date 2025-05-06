@@ -127,7 +127,7 @@
 <script>
 import PageHeader from '@/components/page/header/PageHeader'
 import StandardTable from '@/components/table/StandardTable'
-import { list, find, save_or_update ,deleteRecord} from '@/services/structure'
+import { list, save_or_update ,deleteRecord} from '@/services/structure'
 
 const columns = [
   {

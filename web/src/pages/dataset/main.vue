@@ -57,14 +57,45 @@
   <div class="pagination-container">
     <a-pagination v-model="current" :total="datasetLisTotal" :show-total="total => `共 ${total} 条记录`"  @change="onPageChange" show-less-items />
   </div>
-  </div>
 
+  <a-modal 
+      v-model="open" 
+      title="新增数据集" 
+      @ok="handleOk" 
+      width="700px"
+      :destroyOnClose="true"
+    >
+      <template #footer>
+        <a-button key="back" @click="handleCancel">取消</a-button>
+        <a-button key="submit" type="primary" :loading="loading" @click="handleOk">提交</a-button>
+      </template>
+      
+      <a-row>
+        <a-col :span="24">
+          <div class="dataset-upload">
+            <div class="upload-label">
+              <span class="label">名称：</span>
+            </div>
+            <div class="upload-content">
+              <a-input 
+                v-model="datasetForm.name" 
+                placeholder="请输入数据集名称" 
+                style="width: 100%"
+                :maxLength="20"
+                :rules="[{ required: true, message: '请输入名称', trigger: 'blur' }]"
+              />
+            </div>
+          </div>
+        </a-col>
+      </a-row>
+    </a-modal>
+  </div>
   
 </template>
 
 <script>
 import PageHeader from '@/components/page/header/PageHeader'
-import { find, list, add, deleteDataset } from '@/services/datasets'
+import {  list, add, deleteDataset } from '@/services/datasets'
 
 export default {
   name: 'DatasetMain',
@@ -76,7 +107,12 @@ export default {
       pageSize: 10,
       listLoading: false,
       datasetLisTotal: 0,
-      datasetList: []
+      datasetList: [],
+      open: false,
+      loading: false,
+      datasetForm: {
+        name: ''
+      }
     }
   },
   created() {
@@ -121,18 +157,65 @@ export default {
       })
     },
     handleDelete(item) {
-      // 添加实际的删除逻辑，使用 item 参数
-      console.log('删除项目:', item.title)
-      // 这里可以添加确认对话框和实际的删除操作
-    },
-    showCreateModal() {
-    // 这里弹出创建数据集的弹框
-    this.$message.info('弹出创建数据集弹框')
+      this.$confirm({
+        title: '确认删除',
+        content: '确定要删除这个数据集吗？',
+        onOk: () => {
+          deleteDataset({id: item.id}).then(res => {
+            if (res.data.code === 200) {
+              this.$message.success('删除成功')
+              this.fetchDatasets()
+            } else {
+              this.$message.error(res.data.msg || '删除失败')
+            }
+          }).catch(error => {
+            this.$message.error('删除失败')
+          })
+        },
+        onCancel: () => {
+          this.$message.info('已取消删除')
+        }
+      })
   },
-  handleImport() {
-    // 这里处理导入数据逻辑
-    this.$message.info('导入数据功能')
+  showCreateModal() {
+    this.open = true
   },
+  handleOk() {
+    if (!this.datasetForm.name || this.datasetForm.name.trim().length === 0) {
+      this.$message.error('请输入数据集名称')
+      return
+    }
+    if (this.datasetForm.name.length > 20) {
+      this.$message.error('数据集名称不能超过20个字符')
+      return
+    }
+    
+    this.$confirm({
+      title: '确认创建',
+      content: '确定要创建这个数据集吗？',
+      onOk: () => {
+        this.loading = true
+        add(this.datasetForm).then(res => {
+          this.loading = false
+          this.open = false
+          this.$message.success('添加数据集成功')
+          this.fetchDatasets()
+        }).catch(() => {
+          this.loading = false
+        })
+      },
+      onCancel: () => {
+        this.$message.info('已取消创建')
+      }
+    })
+  },
+  handleCancel() {
+    this.open = false
+    this.datasetForm = {
+      name: ''
+    }
+  },
+  
   openDoc() {
     window.open(process.env.VUE_APP_WEBSITE + '/help', '_blank')
   }

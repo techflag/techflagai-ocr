@@ -19,7 +19,7 @@
           <vue-json-editor 
         v-model="form.json_content"  lang="zh"
         @textSelectionChange="textSelectionChange" style="height: calc(100vh - 160px);" />
-        <a-button size="small" type="danger" style="position: absolute;top: 5px;right: 150px" @click="submitForm">保存</a-button>
+        <a-button size="small" type="danger"  :loading="loading"  style="position: absolute;top: 5px;right: 150px" @click="submitForm">保存</a-button>
       
         </a-layout-content>
       </a-layout>
@@ -34,17 +34,18 @@
 <script>
 import vueJsonEditor  from 'vue-json-editor';
 import Luckysheet from "@/components/Luckysheet/index.vue";
+import { find,save_or_update} from '@/services/structure'
 export default {
-  name: 'CardList',
+  name: 'Structure',
   components: {
     Luckysheet,
-    vueJsonEditor ,
+    vueJsonEditor
   },
   data () {
     return {
       form: {
         id: undefined,
-        output_excel: 'temp_05.xlsx',
+        output_excel: '',
         json_content: {}
       },
       config: {
@@ -62,28 +63,34 @@ export default {
       },
       json: {
         msg: 'demo of jsoneditor'
-      }
+      },
+      loading: false,
     }
   },
   
   mounted() {
-    console.log('form.output_excel value:', this.form.output_excel)
-    console.log('Luckysheet component mounted')
+    const id = this.$route.query.id
+    if (id) {
+      this.fetchData(id)
+    }
   },
   methods: {
+    async fetchData(id) {
+      try {
+        const res = await find({id})
+        if (res.data.code === 200) {
+          this.form = res.data.data
+        }
+      } catch (error) {
+        this.$message.error('获取详情失败')
+      }
+    },
     textSelectionChange (editor, start, end, text)  {
       console.log('textSelectionChange', editor, start, end, text)
       if (text.startsWith ('#{') && text.endsWith('}')){
-
         var val = text.replace('#{','').replace('}','')
-
-
-
         var item = val.split(',')
         console.log(item)
-       
-        
-
       }
     },
     onJsonSave(){ // 点击保存触发
@@ -102,22 +109,24 @@ export default {
       this.$message.success('复制成功')
     },
     submitForm () {
-      this.$request({  // Using the built-in request method instead of undefined save_or_update
-        url: '/api/save',  // Replace with your actual API endpoint
-        method: 'post',
-        data: {
-          id: this.form.id,  // Fixed: using this.form instead of form.value
-          json_content: this.form.json_content
-        }
-      }).then(res => {
-        if (res.code === 200) {
+      this.loading = true;
+      console.log(this.form)
+      this.form={
+        id: this.form.id,
+        name: this.form.name,
+        output_excel: this.form.output_excel,
+        json_content: this.form.json_content
+      }
+      save_or_update(this.form).then(res => {
+        if (res.data.code === 200) {
           this.$message.success('保存成功')
+          this.getData()
         } else {
-          this.$message.error(res.msg || '保存失败')
+          this.$message.error(res.data.msg)
         }
-      }).catch(err => {
-        this.$message.error('保存失败：' + err.message)
       })
+      this.loading = false;
+      
     },
     
   },
