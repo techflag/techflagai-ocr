@@ -95,3 +95,11 @@ export function task_names() {
         'get'
     )
 }
+
+export function update_data_set(data) {
+    return request(
+        '/ocr/task/update_data_set',
+        'post',
+         data
+    )
+}
