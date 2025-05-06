@@ -3,7 +3,7 @@
         <div class="ann_main" ref="annContainer">
           <div id="image-container" ref="imageContainer">
             <svg id="ocr-svg" class="ocrsvg" v-show="showSvgImage" width="100%" height="100%" ref="ocrSvg"></svg>
-            <img id="image" :src="imageSrc" v-show="showBackgroundImage" alt="Image to OCR" ref="imageElement" />
+            <img id="image" :src="showUrl+imageSrc" v-show="showBackgroundImage" alt="Image to OCR" ref="imageElement" />
           </div>
         </div>
         <!-- 可拖动的工具条 -->
@@ -54,7 +54,9 @@
   
   <script>
   import {getDataset, updateDataset} from "@/services/datasets.js";
-  
+  import {
+  find
+} from '@/services/tasks'
   export default {
     computed: {
   
@@ -89,7 +91,7 @@
         offsetY: 0,  // 拖动时的纵向偏移量,
         dsindex: '',
         dsid: '',
-        image_base_url: 'import.meta.env.VITE_API_BASE_URL',
+        showUrl : process.env.VUE_APP_FILE_BASE_URL || '',
         base_ann_resp: null,
         imageElement: null,
         svg: null,
@@ -136,18 +138,16 @@
           this.ocrData = []; // 确保始终有一个有效的数组
         }
       },
-  
-      getDatasetById(ds_id){
-        console.log('ds_id:',ds_id)
 
-        this.dsid = ds_id;
-        this.imageSrc = ds_id+'.png'
+      getDatasetById(taskId){
+        this.dsid = taskId;
         
-        getDataset(ds_id+'_rec.json')
+        find({ id: taskId })
             .then(response => {
-              let resp= response.data;
-              let _annotation_result = JSON.parse(resp);
+              let resp= response.data.data;
+              let _annotation_result = resp.output_json;
               this.ocrData = _annotation_result;
+              this.imageSrc = resp.output_image
               this.imageElement = this.$refs.imageElement;
               this.svg = this.$refs.ocrSvg;
   
@@ -167,6 +167,37 @@
   
   
       },
+  
+      // getDatasetById(ds_id){
+      //   console.log('ds_id:',ds_id)
+
+      //   this.dsid = ds_id;
+      //   this.imageSrc = ds_id+'.png'
+        
+      //   getDataset(ds_id+'_rec.json')
+      //       .then(response => {
+      //         let resp= response.data;
+      //         let _annotation_result = JSON.parse(resp);
+      //         this.ocrData = _annotation_result;
+      //         this.imageElement = this.$refs.imageElement;
+      //         this.svg = this.$refs.ocrSvg;
+  
+      //         // 确保图片加载完毕
+      //         if (this.imageElement) {
+      //           this.setupImageLoad(this.imageElement, this.svg);
+      //         } else {
+      //           console.error('Image element with id "image" not found!');
+      //         }
+  
+      //         // 添加 SVG 事件监听器
+      //         this.addSvgEventListeners(this.svg);
+      //       })
+      //       .catch(error => {
+      //         console.error('Error fetching datasets:', error);
+      //       });
+  
+  
+      // },
   
       // getDatasetById() {
       //   this.imageElement = this.$refs.imageElement;

@@ -4,7 +4,10 @@ export function showFile(data) {
     return request(
         '/file/showFile',
         'get',
-        data
+        data,
+        {
+            responseType: 'blob'
+        }
     )
 }
 export function showFileTxt(data) {

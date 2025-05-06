@@ -33,14 +33,25 @@ const METHOD = {
  */
 async function request(url, method, params, config) {
   const fullUrl = `${BASE_URL}${url}`
+  const requestConfig = {
+    ...config,
+    params: method === METHOD.GET ? params : undefined,
+    responseType: config?.responseType || 'json'
+  }
+  
+  let response;
   switch (method) {
     case METHOD.GET:
-      return axios.get(fullUrl, {params, ...config})
+      response = await axios.get(fullUrl, requestConfig);
+      break;
     case METHOD.POST:
-      return axios.post(fullUrl, params, config)
+      response = await axios.post(fullUrl, params, requestConfig);
+      break;
     default:
-      return axios.get(fullUrl, {params, ...config})
+      response = await axios.get(fullUrl, requestConfig);
   }
+  
+  return config?.responseType === 'blob' ? response.data : response;
 }
 
 /**

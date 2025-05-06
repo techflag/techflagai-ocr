@@ -342,6 +342,7 @@ const options = {
           path: 'dataset/labeling',
           meta: {
             icon: 'check-circle-o',
+            invisible: true,
             query: {
               name: '菜单默认参数'
             }

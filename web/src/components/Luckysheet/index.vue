@@ -117,51 +117,114 @@ methods: {
 
   async downloadExcel() {
     try {
-    //const res = await fetch('http://47.99.148.195:7090/api/file/showFile?name=' + this.name)
-    const res = await showFile({
-      name: this.name
-    })
-    const blob = await res.blob()
-    const file = new File([blob], 'test.xlsx', {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    })
-    this.loadExcel(file)
-  }
-    catch(error) {
-    console.error('Download failed:', error);
-  }
+      const response = await showFile({
+        name: this.name
+      });
+      
+      // 检查响应数据的各种可能情况
+      let rawData;
+      if (!response) {
+        throw new Error('服务器未返回数据');
+      }
+  
+      // 处理不同的响应格式
+      if (response instanceof Blob) {
+        rawData = response;
+      } else if (response instanceof ArrayBuffer) {
+        rawData = response;
+      } else if (response.data) {
+        // 如果是axios响应对象
+        if (response.data instanceof Blob || response.data instanceof ArrayBuffer) {
+          rawData = response.data;
+        } else if (typeof response.data === 'string') {
+          // 如果返回的是错误信息字符串
+          throw new Error(response.data);
+        } else {
+          console.error('未知的响应数据格式:', response);
+          throw new Error('服务器返回的数据格式不支持');
+        }
+      } else if (typeof response === 'string') {
+        // 如果直接返回错误信息
+        throw new Error(response);
+      } else {
+        console.error('未知的响应格式:', response);
+        throw new Error('服务器返回数据格式不正确');
+      }
+  
+      // 创建blob对象
+      const blob = rawData instanceof Blob ? rawData : new Blob([rawData], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+  
+      // 检查blob是否有效
+      if (blob.size === 0) {
+        throw new Error('文件内容为空');
+      }
+    if (blob.size < 100) { // Excel文件通常至少有几KB
+      throw new Error('文件数据不完整');
+    }
+  
+      await this.loadExcel(blob);
+    } catch(error) {
+      console.error('文件下载失败:', error);
+      this.$emit('error', {
+        type: 'download',
+        message: `文件下载失败: ${error.message}`,
+        detail: {
+          fileName: this.name,
+          error: error.stack
+        }
+      });
+    }
   },
 
   loadExcel(files) {
-    LuckyExcel.transformExcelToLucky(files, (exportJson) => {
-      if (!exportJson.sheets || exportJson.sheets.length === 0) {
-        return
-      }
-
-      window.luckysheet.destroy()
-
-      exportJson.sheets.forEach(item => {
-        item.zoomRatio = 0.85
-      })
-
-      window.luckysheet.create({
-        container: 'luckysheet',
-        ...this.config,
-        allowEdit: this.allowEdit,
-        showinfobar: false,
-        data: exportJson.sheets,
-        lang: 'zh',
-        title: '',
-        hook: {
-          cellMousedownBefore: (cell, position) => {
-            this.$emit('cellMousedownBefore', cell, position)
-          },
-          cellUpdated: (r, c, oldValue, newValue, isRefresh) => {
-            this.$emit('cellUpdated', r, c, oldValue, newValue, isRefresh)
-          },
+    return new Promise((resolve, reject) => {
+      try {
+        if (!(files instanceof Blob)) {
+          throw new Error('文件类型必须是Blob');
         }
-      })
-    })
+        
+        LuckyExcel.transformExcelToLucky(files, (exportJson, luckysheetfile) => {
+          try {
+            if (!exportJson || !exportJson.sheets || exportJson.sheets.length === 0) {
+              throw new Error('Excel文件解析失败：未获取到有效工作表');
+            }
+
+            if (window.luckysheet.destroy) {
+              window.luckysheet.destroy();
+            }
+
+            exportJson.sheets.forEach(item => {
+              item.zoomRatio = 0.85;
+            });
+
+            window.luckysheet.create({
+              container: 'luckysheet',
+              ...this.config,
+              allowEdit: this.allowEdit,
+              showinfobar: false,
+              data: exportJson.sheets,
+              lang: 'zh',
+              title: '',
+              hook: {
+                cellMousedownBefore: (cell, position) => {
+                  this.$emit('cellMousedownBefore', cell, position);
+                },
+                cellUpdated: (r, c, oldValue, newValue, isRefresh) => {
+                  this.$emit('cellUpdated', r, c, oldValue, newValue, isRefresh);
+                }
+              }
+            });
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
 },
 

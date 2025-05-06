@@ -30,7 +30,7 @@
           <!-- 图片列表部分 -->
           <div class="image-list">
             <a-list
-              :dataSource="imageList"
+              :dataSource="fileList"
               :pagination="false"
               size="small"
             >
@@ -42,7 +42,7 @@
                     alt="图片"
                     style="height: 100px; object-fit: cover;"
                   />
-                  <a-card-meta :title="item.title"></a-card-meta>
+                  <a-card-meta :title="item.name"></a-card-meta>
                 </a-card>
               </a-list-item>
             </a-list>
@@ -50,12 +50,8 @@
 
           <!-- 分页部分 -->
           <div class="pagination" style="text-align: center; margin-top: 16px;">
-            <a-pagination 
-              size="small"
-              :total="50" 
-              :pageSize="10"
-              @change="handlePageChange"
-            />
+            <a-pagination size="small" v-model="current" :show-total="total => `共 ${total} 条记录`" :page-size.sync="pageSize"
+        :total="datasetTotal" show-less-items @change="onPageChange" />
           </div>
         </a-layout-sider>
         <a-layout-content style="padding: 24px; background: #fff; min-height: 280px;">
@@ -73,22 +69,78 @@
 <script>
 import PageHeader from '@/components/page/header/PageHeader'
 import Annotate from '@/components/ocr/Annotate.vue'  // 添加导入语句
-
+import {
+  list,  update_data_set
+} from '@/services/tasks'
 export default {
-  name: 'CardList',
+  name: 'DatasetLable',
   components: {
     PageHeader,
-    Annotate  // 注册组件
+    Annotate
+  },
+  data () {
+    return {
+      annotateComponent: null,  // 添加全局变量
+      
+      current: 1,
+      desc: '标注功能说明：\n1. 标注：在图片上框选区域并添加文本或标签，实现目标内容的精确标注。\n2. 删除标注：选中已添加的标注区域后可进行删除，便于修正错误标注。\n3. 纠偏：对已标注区域的位置、大小等进行调整，确保标注准确。\n4. 保存：一键保存当前所有标注内容，防止数据丢失。\n5. 显示/隐藏背景图：切换图片背景的显示状态，便于专注于标注内容。\n6. 显示/隐藏标注：切换所有标注内容的显示与隐藏，便于对比原图。\n7. 显示/隐藏标注框：单独控制标注框的可见性，提升标注体验和视觉清晰度。',
+      form: {
+        id: undefined,
+        output_excel: '',
+        output_image:'',
+        output_json:{},
+        json_content: {},
+        confirm_status: 0,
+        
+      },
+      listLoading : false,
+        datasetData: [],
+        datasetTotal: 0,
+        pageSize: 10,
+        page: 1,
+        fileList: [],
+    }
+  },
+  created() {
+    // 移除这里的调用
+    // this.getTaskDetail()
+  },
+  mounted() {
+    // 在组件挂载后初始化全局变量并调用方法
+    this.annotateComponent = this.$refs.annotate;
+    this.getTaskDetail()
+    let params = {
+        status: 1,
+        rectifye_status: 0,
+        data_set_id: this.$route.query.data_set_id,
+        page: this.current,
+        size: this.pageSize,
+      }
+    this.fetchUnLabelList(params)
   },
   methods: {
-    handleCardClick(item) {
-      this.$router.push({
-        path: '/dataset/list',
-        query: {
-          id: item.id,
-          title: item.title
+    async fetchUnLabelList(params = {}) {
+      this.listLoading = true
+      
+      try {
+        const res = await list({
+          
+          ...params
+        })
+        let datasetData = res.data.data
+        if (!datasetData || !datasetData.record || datasetData.record.length === 0) {
+          this.fileList = []
+          this.$message.warning('暂无任务数据')
+          return
         }
-      })
+        this.fileList = datasetData.record
+        this.datasetTotal = datasetData.total
+        this.current = datasetData.page
+      } catch (error) {
+        this.$message.error('获取未标注完成列表失败')
+      } finally {
+        this.listLoading = false
+      }
     },
     handleDetail(item) {
       this.$router.push({
@@ -104,46 +156,34 @@ export default {
       console.log('删除项目:', item.title)
       // 这里可以添加确认对话框和实际的删除操作
     },
-    handlePageChange(page) {
-      console.log('当前页码:', page)
+    onPageChange(page) {
+      let params = {
+        status: 1,
+        rectifye_status: 0,
+        data_set_id: this.$route.query.data_set_id,
+        page: page,
+        size: this.pageSize,
+      }
+     this.fetchUnLabelList(params)
     },
     handleTypeChange(value) {
       console.log('选择的标签类型:', value)
     },
     handleImageClick(item) {
-      // 获取对 Annotate 组件的引用
-      const annotateComponent = this.$refs.annotate;
-      if (annotateComponent) {
-        // 调用 getDatasetById 方法并传入图片ID
-        annotateComponent.getDatasetById(item.id);
+      if (this.annotateComponent) {
+        this.annotateComponent.getDatasetById(item.id);
       }
     },
-  },
-  
-  data () {
-    return {
-      imageList: [
-        {
-          id: 'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F02',
-          title: '样本图片1',
-          imageUrl: 'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F02.png',
-        },
-        {
-          id: 'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F03',
-          title: '样本图片2',
-          imageUrl: 'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F03.png',
-        },
-        {
-          id: 'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F07',
-          title: '样本图片3',
-          imageUrl: 'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F07.png',
-        }
-      ],
-      current: 2,
-      desc: '标注功能说明：\n1. 标注：在图片上框选区域并添加文本或标签，实现目标内容的精确标注。\n2. 删除标注：选中已添加的标注区域后可进行删除，便于修正错误标注。\n3. 纠偏：对已标注区域的位置、大小等进行调整，确保标注准确。\n4. 保存：一键保存当前所有标注内容，防止数据丢失。\n5. 显示/隐藏背景图：切换图片背景的显示状态，便于专注于标注内容。\n6. 显示/隐藏标注：切换所有标注内容的显示与隐藏，便于对比原图。\n7. 显示/隐藏标注框：单独控制标注框的可见性，提升标注体验和视觉清晰度。',
-     
-      extraImage: 'https://gw.alipayobjects.com/zos/rmsportal/RzwpdLnhmvDJToTdfDPe.png',
+    
+    async getTaskDetail() {
+      // 添加空值检查
+      if (this.annotateComponent) {
+        this.annotateComponent.getDatasetById(this.$route.query.data_id);
+      } else {
+        console.error('annotateComponent is not initialized');
+      }
     }
+    // 其他需要使用annotate组件的方法可以直接使用this.annotateComponent
   }
 }
 </script>
