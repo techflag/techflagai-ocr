@@ -1,8 +1,8 @@
 <template>
   <div class="box">
-    <a-button v-if="save_flag" type="primary"
+    <a-button  type="primary"
                size="small"
-               style="z-index: 999;position: absolute;left: 30px;top: 10px"
+               style="z-index: 99999;position: absolute;right: 30px;top: 10px"
                @click="saveExcel"
     >
       {{ save_txt }}
@@ -13,7 +13,7 @@
 
 <script>
 import LuckyExcel from 'luckyexcel'
-//import {showFile} from "@/services/upload.js"
+import {showFile} from "@/services/file"
 import {exportExcel} from "@/utils/export"
 
 export default {
@@ -67,6 +67,7 @@ watch: {
 
 data() {
   return {
+    isInitialized: false,  // 添加初始化状态标记
     options: {
       container: 'luckysheet',
       title: 'luckysheet',
@@ -77,17 +78,30 @@ data() {
     }
   }
 },
-
 methods: {
   initLuckysheet() {
-    if (typeof window.luckysheet === 'undefined') {
-      console.error('Luckysheet library not loaded');
-      return;
-    }
-    if (window.luckysheet.destroy) {
-      window.luckysheet.destroy();
-    }
-    window.luckysheet.create(this.options);
+    if (this.isInitialized) return Promise.resolve(window.luckysheet);
+    
+    return new Promise((resolve, reject) => {
+      if (typeof window.luckysheet === 'undefined') {
+        const err = new Error('Luckysheet library not loaded');
+        console.error(err);
+        reject(err);
+        return;
+      }
+      
+      try {
+        if (window.luckysheet.destroy) {
+          window.luckysheet.destroy();
+        }
+        window.luckysheet.create(this.options);
+        this.isInitialized = true;
+        resolve(window.luckysheet);
+      } catch (error) {
+        console.error('Luckysheet初始化失败:', error);
+        reject(error);
+      }
+    });
   },
 
   async saveExcel() {
@@ -103,8 +117,10 @@ methods: {
 
   async downloadExcel() {
     try {
-    const res = await fetch('http://47.99.148.195:7090/api/file/showFile?name=' + this.name)
-    //const res = await fetch(process.env.VUE_APP_FILE_BASE_URL + this.name)
+    //const res = await fetch('http://47.99.148.195:7090/api/file/showFile?name=' + this.name)
+    const res = await showFile({
+      name: this.name
+    })
     const blob = await res.blob()
     const file = new File([blob], 'test.xlsx', {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'

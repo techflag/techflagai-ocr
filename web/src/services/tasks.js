@@ -34,7 +34,7 @@ export function dataSetupload(data, file) {
     )
 }
 
-export function readExcel(data) {
+export function read_excel(data) {
     return request(
         '/ocr/task/read_excel',
         'get',
@@ -101,5 +101,25 @@ export function update_data_set(data) {
         '/ocr/task/update_data_set',
         'post',
          data
+    )
+}
+/**
+ * 切割图片为训练用的数据集
+ * @param {} data 
+ * @returns 
+ */
+export function cutting_img(data) {
+    return request(
+        '/train/cutting_img',
+        'post',
+         data
+    )
+}
+
+export function save_version(data) {
+    return request(
+        '/ocr/task/save_version',
+        'post',
+        data
     )
 }

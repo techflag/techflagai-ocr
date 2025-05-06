@@ -2,14 +2,14 @@ import {request} from '@/utils/request'
 
 export function showFile(data) {
     return request(
-        '/api/file/showFile',
+        '/file/showFile',
         'get',
         data
     )
 }
 export function showFileTxt(data) {
     return request(
-         '/api/file/showFile',
+         '/file/showFile',
         'get',
          data
     )
@@ -17,7 +17,7 @@ export function showFileTxt(data) {
 
 export function upload(data) {
     return request(
-         '/api/file/upload',
+         '/file/upload',
         'post',
         data
     )

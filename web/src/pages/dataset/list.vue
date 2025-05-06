@@ -98,8 +98,13 @@
 </template>
 
 <script>
+import {
+  save,
+  list,  // 修改为list
+  statusCount, task_names, update_data_set
+} from '@/services/tasks'
 export default { 
-  name: 'ProjectList',
+  name: 'DatasetList',
   
   data () {
     return {

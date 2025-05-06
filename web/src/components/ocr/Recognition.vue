@@ -202,12 +202,10 @@
       renderBoxes(data, scaleX, scaleY) {
         const svg = this.$refs.ocrSvg;
         svg.innerHTML = '';
-        console.log('renderBoxes-data-start:', data);
         data.forEach((item) => {
           item.uniqueId = this.uniqueId_gen();
           this.renderCellOrLine(item, scaleX, scaleY, item.uniqueId, svg, true);
         });
-        console.log('renderBoxes-data-end:');
       },
       renderCellOrLine(item, scaleX, scaleY, uniqueId, svg, isLine = false) {
         const position = item.position;
@@ -620,7 +618,6 @@
             this.addControlPoint(this.$refs.ocrSvg, position[i], position[i + 1], this.self_uniqueId, i / 2, 'line', this.polygon);
           }
   
-          console.log('Double-click event handled for polygon.');
         });
   
         this.polygon.removeEventListener('mousemove', this.handleMouseMove);
