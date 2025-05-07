@@ -139,6 +139,7 @@ export default {
       data_set_id: id
     }
     this.fetchTasks(params)
+    this.fetchDatasets()
   },
   methods: {
     addNew() {
@@ -243,6 +244,7 @@ export default {
       try {
         const res = await datasetList() // 调用数据集列表接口
         this.datasetList = res.data.data.record || []
+        console.log('数据集列表', this.datasetList)
       } catch (error) {
         this.$message.error('获取数据集列表失败')
       }

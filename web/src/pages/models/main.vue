@@ -6,7 +6,7 @@
       <div slot="content" v-if="!this.$slots.headerContent && desc">
         <p>{{desc}}</p>
         <div class="link">
-          <span @click="handleModeConfig">
+          <span @click="handleModeConfig(null)">
             <a-icon type="plus-circle" />创建模型
           </span>
           
@@ -20,7 +20,12 @@
     <div class="card-list">
     
     <a-list itemLayout="vertical">
-      <a-list-item :key="item.id" v-for="item in modelsList" style="position: relative;">
+      <a-list-item 
+        :key="item.id" 
+        v-for="item in modelsList" 
+        style="position: relative; cursor: pointer;"
+        @click="handleModeConfig(item)"
+      >
         <a-button 
           v-if="item.status === 2" 
           size="small" 
@@ -97,9 +102,12 @@ export default {
     openDoc() {
       window.open(process.env.VUE_APP_WEBSITE + '/help', '_blank')
     },
-    handleModeConfig() {
+    handleModeConfig(item) {
       this.$router.push({
         path: '/models/config',
+        query: {
+          id: item ? item.id : null
+        }
       })
     },
     

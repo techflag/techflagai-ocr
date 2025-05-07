@@ -49,9 +49,13 @@
           数据集：
         </a-col>
         <a-col> 
-          <a-select v-model="selectedDataset" placeholder="不限" style="width: 120px" @change="handleDatasetChange">
-                <a-select-option value="1">优秀</a-select-option>
-          </a-select>
+         
+          <a-select v-model="selectedDataset" size="small" style="width: 120px;"
+                  @change="handleDatasetChange" :disabled="!!model_id">
+                  <a-select-option v-for="dataset in datasetList" :key="dataset.id" :value="dataset.id">
+                    {{ dataset.name }}
+                  </a-select-option>
+            </a-select>
         
         </a-col>
       </a-row> 
@@ -63,8 +67,8 @@
         <a-col :span="2"  class="ratio"> 
           <a-input-number
               v-model="train_ratio"
-              :min="0"
-              :max="70"
+              :min="70"
+              :max="95"
               :formatter="value => `${value}%`"
               :parser="value => value.replace('%', '')"
             />
@@ -79,7 +83,7 @@
         <a-col :span="2" class="ratio"> 
           <a-input-number
               v-model="verify_ratio"
-              :min="0"
+              :min="5"
               :max="30"
               :formatter="value => `${value}%`"
               :parser="value => value.replace('%', '')"
@@ -222,16 +226,17 @@
 
 <script>
 import PageHeader from '@/components/page/header/PageHeader'
-
+import { find } from '@/services/models'
+import { list as datasetList } from '@/services/datasets'
 export default {
-  name: 'CardList',
+  name: 'ModelsConfig',
   components: {PageHeader},
   
   data () {
     return {
-      current: 2,
+      current: 1,
       desc: '本OCR模型的训练结果显示出良好的性能指标。模型在识别正确样本方面表现出色，准确率（Accuracy）为80%。精确率（Precision）和召回率（Recall）均为80%，表明模型在识别正样本时的准确性和覆盖率都达到了较高水平。F1分数（F1 Score）为80%，综合了精确率和召回率的表现。均方误差（MSE）和均方根误差（RMSE）均为80%，显示出模型在预测误差方面的稳定性。平均绝对误差（MAE）为80%，进一步验证了模型的预测精度。当前训练状态为：训练中，表明模型仍在持续优化中。',
-      modelName: 'finished',
+      modelName: '',
       sliderValue: 30,
       verify_ratio: 30,
       train_ratio: 30,
@@ -269,9 +274,55 @@ export default {
       },
       selectedDataset: '',
       selectModel: '',
+      datasetList: [],
+      model_id: '',
     }
   },
+  async created() {
+    this.model_id = this.$route.query.id
+    await this.fetchModelData(this.model_id)
+    this.fetchDatasets()
+  },
   methods: {
+    async fetchDatasets() {
+      try {
+        const res = await datasetList() // 调用数据集列表接口
+        this.datasetList = res.data.data.record || []
+        console.log('数据集列表', this.datasetList)
+      } catch (error) {
+        this.$message.error('获取数据集列表失败')
+      }
+    },
+    async fetchModelData(id) {
+      if (!id) return
+      
+      try {
+        const res = await find({ id })
+        if (res.data?.data) {
+          const modelData = res.data.data
+          // 更新模型数据
+          this.modelName = modelData.name || ''
+          this.selectedDataset = modelData.data_set_id || ''
+          this.train_ratio = modelData.train_set || 30
+          this.verify_ratio = modelData.val_set || 30
+          
+          // 更新训练配置
+          if (modelData.customize) {
+            const trainConfig = JSON.parse(modelData.customize)
+            this.train_confing = {
+              epochs: trainConfig.epochs || 10,
+              batchSize: trainConfig.batch_size || 32,
+              learningRate: trainConfig.learning_rate || 0.001
+            }
+          }
+          
+          // 更新模型框架选择
+          this.selectModel = modelData.mission_scene || ''
+        }
+      } catch (error) {
+        this.$message.error('获取模型信息失败')
+      }
+    },
     changedataimage (item, idx)  {
       this.dataimageUrl.value = item
       this.dataimageisActive.value = idx
