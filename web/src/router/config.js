@@ -365,7 +365,23 @@ const options = {
             invisible: true
           },
           component: () => import('@/pages/structure/detail')
-        }
+        },
+        {
+          path: 'sysset',
+          name: '系统设置',
+          meta: {
+            icon: 'appstore-o'
+          },
+          component: PageView,
+          children: [
+            
+            {
+              path: 'palette',
+              name: '模型配置',
+              component: () => import('@/pages/components/Palette')
+            }
+          ]
+        },
       ]
     },
   ]
