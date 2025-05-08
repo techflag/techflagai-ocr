@@ -51,7 +51,7 @@
         <a-col> 
          
           <a-select v-model="selectedDataset" size="small" style="width: 120px;"
-                  @change="handleDatasetChange" :disabled="!!model_id">
+                  @change="handleDatasetChange" >
                   <a-select-option v-for="dataset in datasetList" :key="dataset.id" :value="dataset.id">
                     {{ dataset.name }}
                   </a-select-option>
@@ -111,10 +111,10 @@
         
       </a-col>
       <a-col :span="6" class="train_dataset">
-        训练集：701个样本，占比70.00%
+        训练集：{{data_check_result.train_num}}个样本，占比{{train_ratio}}%
       </a-col>
       <a-col :span="6" class="train_dataset">
-        验证集：176个样本，占比30.00%
+        验证集：{{data_check_result.val_num}}个样本，占比{{verify_ratio}}%
       </a-col>
       <a-col :span="10" class="train_desc">
         
@@ -134,10 +134,10 @@
                 <div>抽样展示10个样本</div>
               </div>
               <div style="margin-top: 12px;text-align: center;padding:12px">
-                <img style="max-width:100%;height:240px;background:#F7F9FF" :src="dataimageUrl" alt="">
+                <img style="max-width:100%;height:240px;background:#F7F9FF" :src="getImageUrl(dataimageUrl)" alt="">
                 <div class="dataimage_select">
                   <div class="select_item" @click="changedataimage(item,idx)" :class="{'active':dataimageisActive==idx}"
-                       :style="'background-image: url('+item+')'" v-for="(item,idx) in dataimageList" :key="idx"></div>
+                       :style="'background-image: url('+getImageUrl(item)+')'" v-for="(item,idx) in dataimageList" :key="idx"></div>
                 </div>
               </div>
             </div>
@@ -233,6 +233,7 @@
 import PageHeader from '@/components/page/header/PageHeader'
 import { find,data_check_data,data_check } from '@/services/models'
 import { list as datasetList } from '@/services/datasets'
+
 export default {
   name: 'ModelsConfig',
   components: {PageHeader},
@@ -246,18 +247,7 @@ export default {
       train_ratio: 70,
       dataimageUrl: 'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F02.png',
       dataimageisActive: 0,
-      dataimageList: [
-        'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F02.png',
-        'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F03.png',
-        'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F07.png',
-        'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F08.png',
-        'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F09.png',
-        'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F10.png',
-        'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F11.png',
-        'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F12.png',
-        'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F13.png',
-        'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F14.png'
-      ],
+      dataimageList: [     ],
       datasetType: '1',
       step: 0,
       stepStyle: {
@@ -281,7 +271,14 @@ export default {
       datasetList: [],
       model_id: '',
       data_set_status: 0, //切分状态 0.否 1.切分中 2.切分成功 -1.切分失败
-      loading: false
+      loading: false,
+      data_check_result: {
+        "train_num": 0,
+        "val_num": 0,
+        "val_list": [],
+        "train_list": []
+      },
+      image_base_url: process.env.VUE_APP_FILE_BASE_URL
     }
   },
   async created() {
@@ -312,6 +309,15 @@ export default {
           this.train_ratio = modelData.train_set || 70
           this.verify_ratio = modelData.val_set || 30
           this.data_set_status = modelData.data_set_status || 0
+          this.data_check_result =  {
+            "train_num": modelData.train_num || 0,
+            "val_num": modelData.val_num || 0,
+            "val_list": modelData.val_list || [],
+            "train_list": modelData.train_list || []
+          }
+
+          this.changeImage('1')
+          this.dataimageUrl = this.data_check_result.train_list[0]
           
           // 更新训练配置
           if (modelData.customize) {
@@ -335,7 +341,11 @@ export default {
       this.dataimageisActive.value = idx
     },
     changeImage (value) {
-      console.log(value)
+      if (value === '1') {
+        this.dataimageList = this.data_check_result.train_list
+      } else {
+        this.dataimageList = this.data_check_result.val_list
+      }
     },
     handleModelChange (value) {
       this.selectModel=value
@@ -455,23 +465,31 @@ export default {
           content: '确定校验当前数据吗？',
           okText: '确定',
           cancelText: '取消',
-          onOk: () => {
+          onOk: async () => {  // Add async here
             this.$message.success('数据集校验开始')
               try {
                 this.data_set_status = 1 // 设置为校验中状态
-                const res =  data_check({
+                const res = await data_check({
                   id: this.model_id,
                   train_set: this.train_ratio,
                   val_set: this.verify_ratio,
                   data_set_id: this.selectedDataset
                 })
                 
-                
+                if (res.data.code === 200) {
+                  this.$message.success('数据集校验成功')
+                  this.data_set_status = 2 // 设置为校验成功状态
+                  this.data_check_result = res.data.data
+                  this.changeImage('1')
+                  this.dataimageUrl = this.data_check_result.train_list[0]
+                } else {
+                  this.$message.error(res.data.msg || '校验失败')
+                  this.data_set_status = 0// 设置为校验失败状态
+                }
               } catch (error) {
                 this.$message.error(error.message || '校验失败')
-                
+                this.data_set_status = 0 // 设置为校验失败状态
               } 
-           
           },
           onCancel: () => {
             console.log('取消校验')
@@ -481,6 +499,9 @@ export default {
         console.error('数据校验失败:', error)
         this.$message.error(error.message || '操作已取消')
       }
+    },
+    getImageUrl(imageUrl, type = 2) {
+      return `${this.image_base_url}${imageUrl}&type=${type}`
     },
   }
 }

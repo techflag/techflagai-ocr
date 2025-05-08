@@ -6,7 +6,7 @@
       <div slot="content" v-if="!this.$slots.headerContent && desc">
         <p>{{desc}}</p>
         <div class="link">
-          <span @click="handleModeConfig(null)">
+          <span @click="handleNewModel()">
             <a-icon type="plus-circle" />创建模型
           </span>
           
@@ -61,6 +61,39 @@
   <div class="pagination-container">
   <a-pagination v-model="current" :total="modelsLisTotal" :show-total="total => `共 ${total} 条记录`"  @change="onPageChange" show-less-items  />
   </div>  
+
+  <a-modal 
+      v-model="open" 
+      title="新增模型" 
+      @ok="handleOk" 
+      width="400px"
+      :destroyOnClose="true"
+    >
+      <template #footer>
+        <a-button key="back" @click="handleCancel">取消</a-button>
+        <a-button key="submit" type="primary" :loading="loading" @click="handleOk">提交</a-button>
+      </template>
+      
+      <a-row>
+        <a-col :span="24">
+          <div class="dataset-upload">
+            <div class="upload-label">
+              <span class="label">名称：</span>
+            </div>
+            <div class="upload-content">
+              <a-input 
+                v-model="modelName" 
+                placeholder="请输入模型名称" 
+                style="width: 100%"
+                :maxLength="20"
+                :rules="[{ required: true, message: '请输入名称', trigger: 'blur' }]"
+              />
+            </div>
+          </div>
+        </a-col>
+      </a-row>
+    </a-modal>
+  
 </div>
 
   
@@ -68,7 +101,7 @@
 
 <script>
 import PageHeader from '@/components/page/header/PageHeader'
-import { find, list } from '@/services/models'
+import { find, list,save_model } from '@/services/models'
 
 export default {
   name: 'ModelsList',
@@ -83,7 +116,10 @@ export default {
       pageSize: 10,
       listLoading: false,
       modelsLisTotal: 0,
-      modelsList: []
+      modelsList: [],
+      modelName: '',
+      open: false,
+      loading: false,
     }
   },
   created() {
@@ -110,6 +146,10 @@ export default {
         }
       })
     },
+
+    handleNewModel() {
+      this.open = true
+    },
     
     async fetchModels() {
       this.listLoading = true
@@ -126,6 +166,38 @@ export default {
         this.listLoading = false
       }
     },
+    handleCancel() {
+      this.open = false
+    },
+    handleOk() {
+      if (!this.modelName || this.modelName.trim().length === 0) {
+        this.$message.error('请输入模型名称')
+        return
+      }
+      if (this.modelName.length > 20) {
+        this.$message.error('模型名称不能超过20个字符')
+        return
+      }
+      this.loading = true
+      save_model({
+        name: this.modelName,
+        producte_line: 1,
+      }).then(res => {
+        // 检查响应状态码
+        if (res.data.code === 200) {
+          this.loading = false;
+          this.open = false;
+          this.$message.success('创建模型成功');
+          this.modelName = '';
+          this.fetchModels();
+        } else {
+          this.$message.error(res.data.msg || '创建模型失败');
+        }
+      }).catch(error => {
+        this.loading = false;
+        this.$message.error('创建模型失败：' + (error.message || '未知错误'));
+      })
+    }
   }
 }
 </script>

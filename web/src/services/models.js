@@ -16,7 +16,13 @@ export function list(data) {
     data
   )
 }
-
+// 保存新模型
+export function save_model(data) {
+  return request(
+      '/ocr/model/save',
+      'post',
+      data)
+}
 
 
 // 获取文件
