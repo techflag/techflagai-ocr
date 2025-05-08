@@ -40,7 +40,7 @@
           模型名称：
         </a-col>
         <a-col >
-          <a-input placeholder="试试看"  v-model="modelName"  style="width:300px" >
+          <a-input placeholder=""  v-model="modelName"  style="width:300px" >
         </a-input>
         </a-col>
       </a-row> 
@@ -74,9 +74,7 @@
             />
       
         </a-col>
-        <a-col :span="12" class="input_lable">
-          <a-slider v-model="sliderValue" :tooltip-open="true" />
-        </a-col>
+        
         <a-col :span="2" class="input_lable">
           验证占比:
         </a-col>
@@ -99,7 +97,16 @@
           本工具可完成数据集的训练集和验证集按比例随机切分，如果上传数据焦中含数据切分文件，会进行重新切分并保存为新的数据集，切分占比1-99之间，不可为0
         </a-col>
       </a-row>
-    <a-row class="row">
+      <a-row class="row_button">
+      <a-col class="dataset_check" :span="16">
+        <a-button style="width: 70%;margin: 0 auto" :disabled="data_set_status == 1"
+                       @click="data_check_click">
+              {{ data_set_status == 0 ? '开始校验' : data_set_status == 1 ? '校验中' : '重新校验' }}
+            </a-button>
+      </a-col>
+     
+    </a-row>
+    <a-row class="row" v-if="data_set_status == 2">
       <a-col :span="2" class="train_desc">
         
       </a-col>
@@ -113,7 +120,7 @@
         
       </a-col>
     </a-row>
-    <a-row class="dataset_preview_row">
+    <a-row class="dataset_preview_row" v-if="data_set_status == 2">
       <a-divider />
       <a-col class="dataset_preview">
         <div style="margin-top: 20px;">
@@ -137,11 +144,9 @@
       </a-col>
     </a-row>
     <a-row class="row_button">
-      <a-col class="dataset_check" :span="16">
-        <a-button type="primary" block>数据校验</a-button>
-      </a-col>
-      <a-col class="dataset_next">
-        <a-button type="primary" @click="toStep(1)" block>下一步</a-button>
+      
+      <a-col class="dataset_next" v-if="data_set_status == 2">
+        <a-button type="primary"  @click="toStep(1)" block>下一步</a-button>
       </a-col>
     </a-row>
   </div>
@@ -226,7 +231,7 @@
 
 <script>
 import PageHeader from '@/components/page/header/PageHeader'
-import { find } from '@/services/models'
+import { find,data_check_data,data_check } from '@/services/models'
 import { list as datasetList } from '@/services/datasets'
 export default {
   name: 'ModelsConfig',
@@ -237,9 +242,8 @@ export default {
       current: 1,
       desc: '本OCR模型的训练结果显示出良好的性能指标。模型在识别正确样本方面表现出色，准确率（Accuracy）为80%。精确率（Precision）和召回率（Recall）均为80%，表明模型在识别正样本时的准确性和覆盖率都达到了较高水平。F1分数（F1 Score）为80%，综合了精确率和召回率的表现。均方误差（MSE）和均方根误差（RMSE）均为80%，显示出模型在预测误差方面的稳定性。平均绝对误差（MAE）为80%，进一步验证了模型的预测精度。当前训练状态为：训练中，表明模型仍在持续优化中。',
       modelName: '',
-      sliderValue: 30,
       verify_ratio: 30,
-      train_ratio: 30,
+      train_ratio: 70,
       dataimageUrl: 'https://handwrite.oss-cn-nanjing.aliyuncs.com/kqlz1%2F02.png',
       dataimageisActive: 0,
       dataimageList: [
@@ -276,6 +280,8 @@ export default {
       selectModel: '',
       datasetList: [],
       model_id: '',
+      data_set_status: 0, //切分状态 0.否 1.切分中 2.切分成功 -1.切分失败
+      loading: false
     }
   },
   async created() {
@@ -303,8 +309,9 @@ export default {
           // 更新模型数据
           this.modelName = modelData.name || ''
           this.selectedDataset = modelData.data_set_id || ''
-          this.train_ratio = modelData.train_set || 30
+          this.train_ratio = modelData.train_set || 70
           this.verify_ratio = modelData.val_set || 30
+          this.data_set_status = modelData.data_set_status || 0
           
           // 更新训练配置
           if (modelData.customize) {
@@ -414,7 +421,67 @@ export default {
     
     toModelLog() {
       this.$router.push('/model/log')
-    }
+    },
+
+    async data_check_click() {
+
+      if (!this.modelName?.trim()) {
+        this.$message.error('请输入模型名称')
+        return 
+      }
+
+      if (!this.selectedDataset) {
+        this.$message.error('请选择数据集')
+        return
+      }
+      
+      if (!this.train_ratio) {
+        this.$message.error('请设置训练集占比')
+        return
+      }
+      
+      if (!this.verify_ratio) {
+        this.$message.error('请设置验证集占比')
+        return
+      }
+      if (this.train_ratio + this.verify_ratio !== 100) {
+        this.$message.error('训练集占比和验证集占比之和必须为100%')
+        return
+      }
+      
+      try {
+        await this.$confirm({
+          title: '提示',
+          content: '确定校验当前数据吗？',
+          okText: '确定',
+          cancelText: '取消',
+          onOk: () => {
+            this.$message.success('数据集校验开始')
+              try {
+                this.data_set_status = 1 // 设置为校验中状态
+                const res =  data_check({
+                  id: this.model_id,
+                  train_set: this.train_ratio,
+                  val_set: this.verify_ratio,
+                  data_set_id: this.selectedDataset
+                })
+                
+                
+              } catch (error) {
+                this.$message.error(error.message || '校验失败')
+                
+              } 
+           
+          },
+          onCancel: () => {
+            console.log('取消校验')
+          }
+        })
+      } catch (error) {
+        console.error('数据校验失败:', error)
+        this.$message.error(error.message || '操作已取消')
+      }
+    },
   }
 }
 </script>
