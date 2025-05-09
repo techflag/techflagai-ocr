@@ -8,25 +8,33 @@ export function query(data) {
     )
 }
 
-export function save(data, file) {
+export function save(data, files) {
     const formData = new FormData()
-    formData.append('file', file)
-    Object.keys(data).forEach(key => {
-        formData.append(key, data[key])
+    // 逐个添加文件
+    files.forEach(file => {
+        formData.append('file', file)  // 每个文件单独添加
     })
+    formData.append('data_set_id', data)
+    
+    // 调试输出
+    for (let [key, value] of formData.entries()) {
+        console.log(key, value)
+    }
+    
     return request(
         '/ocr/task/save',
         'post',
-        formData
+        formData,
+        {'Content-Type': 'multipart/form-data'}
     )
 }
 
-export function dataSetupload(data, file) {
+export function dataSetupload(data, files) {
     const formData = new FormData()
-    formData.append('file', file)
-    Object.keys(data).forEach(key => {
-        formData.append(key, data[key])
+    files.forEach(file => {
+        formData.append('file', file)  // 每个文件单独添加
     })
+    formData.append('data_set_id', data)
     return request(
         '/ocr/task/dataSetupload',
         'post',

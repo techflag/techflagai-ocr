@@ -21,7 +21,7 @@
     <!-- 移除重复的列表，只保留一个 -->
     <a-list :grid='{ gutter: 24, xl: 8, lg: 3, md: 3, sm: 2, xs: 1 }' style="padding: 10px;background: white;"
       :loading="listLoading">
-      <a-list-item :key="task.id" v-for="task in fileList" style="padding: 0 4px">
+      <a-list-item :key="task.id" v-for="task in datalList" style="padding: 0 4px">
         <a-card class="card-list">
           <img slot="cover" :src="getTaskImage(task.upload_image)" @click="handleCardClick(task.id)" height="154" />
           <a-card-meta :title="task.name">
@@ -94,14 +94,15 @@
               <a-upload-dragger
                     v-model="fileList"
                     name="file"
-                    :multiple="true"
-                    :customRequest="customUpload"
+                    :multiple="false" 
+                    :beforeUpload="beforeUpload"
                     @change="handleChange"
+                    accept=".zip" 
                   >
                     <p class="ant-upload-drag-icon">
-                      <a-icon type="file-add" theme="twoTone" />
+                      <a-icon type="file-zip" theme="twoTone" />
                     </p>
-                    <p class="ant-upload-text">点击或拖拽文件到此区域上传</p>
+                    <p class="ant-upload-text">点击或拖拽ZIP压缩包到此区域上传</p>
                   </a-upload-dragger>
             </div>
           </div>
@@ -114,7 +115,7 @@
 
 <script>
 import {
-  list,  update_data_set, save
+  list,  update_data_set, dataSetupload
 } from '@/services/tasks'
 import { list as datasetList } from '@/services/datasets'
 import { upload } from '@/services/file'
@@ -135,6 +136,7 @@ export default {
       datasetList: [],
       datasetTotal: 0,
       upload_dataset_id: '',
+      datalList: [],
     }
   },
   created() {
@@ -154,12 +156,23 @@ export default {
     },
     handleOk() {
       this.loading = true;
-      // 移除焦点
-      document.activeElement.blur();
-      setTimeout(() => {
-        this.loading = false;
-        this.open = false;
-      }, 3000);
+      console.log('this.fileList', this.fileList)
+      // 调用save方法上传
+      dataSetupload(this.upload_dataset_id, this.fileList)
+        .then(res => {
+          this.loading = false;
+          this.open = false;
+          if (res.data.code === 200) {
+            this.$message.success('上传成功');
+            this.onPageChange(1); // 刷新列表
+          } else {
+            this.$message.error(res.data.msg || '上传失败');
+          }
+        })
+        .catch(error => {
+          this.loading = false;
+          this.$message.error(error.message || '上传失败');
+        });
     },
     handleCancel() {
       this.open = false
@@ -168,34 +181,26 @@ export default {
       console.log('upload_dataset_id', this.upload_dataset_id)
     },
     beforeUpload(file) {
-      this.fileList = [...this.fileList, file];
-      return false;
+      // 检查文件类型是否为zip
+      if (!file.name.toLowerCase().endsWith('.zip')) {
+        this.$message.error('请上传ZIP格式的压缩包');
+        return false;
+      }
+      
+      // 清空原有文件列表
+      this.fileList = [];
+      this.fileList.push(file);
+      return false; // 阻止自动上传
     },
     handleChange(info) {
-        const status = info.file.status;
-        if (status !== 'uploading') {
-          console.log(info.file, info.fileList);
-        }
-        if (status === 'done') {
-          this.$message.success(`${info.file.name} file uploaded successfully.`);
-        } else if (status === 'error') {
-          this.$message.error(`${info.file.name} file upload failed.`);
-        }
+      // 更新fileList状态
+      if (info.file.status === 'removed') {
+        this.fileList = this.fileList.filter(f => f.uid !== info.file.uid);
+      } else {
+        this.fileList = info.fileList.map(f => f.originFileObj || f);
+      }
     },
-    customUpload(options) {
-      const { file, onSuccess, onError } = options;
-      const data = {
-        data_set_id: this.upload_dataset_id
-      };
-      
-      save(data, file)
-        .then(response => {
-          onSuccess(response, file);
-        })
-        .catch(error => {
-          onError(error);
-        });
-    },
+    
     sampleStautsOnChange(e) {
       let params = {
         data_set_id: this.$route.query.id
@@ -234,11 +239,11 @@ export default {
         })
         let taskdata = res.data.data
         if (!taskdata || !taskdata.record || taskdata.record.length === 0) {
-          this.fileList = []
+          this.datalList = []
           this.$message.warning('暂无任务数据')
           return
         }
-        this.fileList = taskdata.record
+        this.datalList = taskdata.record
         this.datasetTotal = taskdata.total
         this.current = taskdata.page
       } catch (error) {

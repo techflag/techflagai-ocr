@@ -38,7 +38,7 @@ async function request(url, method, params, config) {
     params: method === METHOD.GET ? params : undefined,
     responseType: config?.responseType || 'json'
   }
-  
+  console.log('requestConfig', requestConfig)
   let response;
   switch (method) {
     case METHOD.GET:
