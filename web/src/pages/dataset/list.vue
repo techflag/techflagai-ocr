@@ -71,13 +71,16 @@
         <a-col :span="12">
           <div class="dataset-upload">
             <div class="upload-label">
-            <span class="label">数据集：</span>
+              <span class="label">数据集：</span>
             </div>
             <div class="upload-content">
-            <a-select placeholder="不限" style="width: 120px">
-              <a-select-option value="1">优秀</a-select-option>
-            </a-select>
-          </div>
+              <a-select v-model="upload_dataset_id" size="small" style="width: 120px;"
+                  @change="upload_dataset_change">
+                  <a-select-option v-for="dataset in datasetList" :key="dataset.id" :value="dataset.id">
+                    {{ dataset.name }}
+                  </a-select-option>
+                </a-select>
+            </div>
           </div>
         </a-col>
       </a-row>
@@ -92,7 +95,7 @@
                     v-model="fileList"
                     name="file"
                     :multiple="true"
-                    action="https://www.mocky.io/v2/5cc8019d300000980a055e76"
+                    :customRequest="customUpload"
                     @change="handleChange"
                   >
                     <p class="ant-upload-drag-icon">
@@ -111,9 +114,10 @@
 
 <script>
 import {
-  list,  update_data_set
+  list,  update_data_set, save
 } from '@/services/tasks'
 import { list as datasetList } from '@/services/datasets'
+import { upload } from '@/services/file'
 export default { 
   name: 'DatasetList',
   
@@ -130,6 +134,7 @@ export default {
       pageSize: 16,
       datasetList: [],
       datasetTotal: 0,
+      upload_dataset_id: '',
     }
   },
   created() {
@@ -159,7 +164,9 @@ export default {
     handleCancel() {
       this.open = false
     },
-  
+    upload_dataset_change() {
+      console.log('upload_dataset_id', this.upload_dataset_id)
+    },
     beforeUpload(file) {
       this.fileList = [...this.fileList, file];
       return false;
@@ -174,6 +181,20 @@ export default {
         } else if (status === 'error') {
           this.$message.error(`${info.file.name} file upload failed.`);
         }
+    },
+    customUpload(options) {
+      const { file, onSuccess, onError } = options;
+      const data = {
+        data_set_id: this.upload_dataset_id
+      };
+      
+      save(data, file)
+        .then(response => {
+          onSuccess(response, file);
+        })
+        .catch(error => {
+          onError(error);
+        });
     },
     sampleStautsOnChange(e) {
       let params = {
@@ -271,8 +292,12 @@ export default {
     },
     onPageChange(page) {
       this.current = page
-      this.data_set_id=this.$route.query.id
-      this.fetchTasks()
+      const params = {
+        data_set_id: this.$route.query.id,
+        page: page,
+        size: this.pageSize
+      };
+      this.fetchTasks(params);
     },
   }
 }
@@ -348,3 +373,4 @@ export default {
     }
   }
 </style>
+
