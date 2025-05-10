@@ -24,6 +24,17 @@ export function save_model(data) {
       data)
 }
 
+/**
+ * 测试第三方模型配置的信息是否有效
+ * @param {} data 
+ * @returns 
+ */
+export function rec_model_test(data) {
+  return request(
+      '/ocr/model/model_test',
+      'post',
+      data)
+}
 
 // 获取文件
 export function data_check_data(data) {
@@ -40,3 +51,4 @@ export function data_check(data) {
       data
   )
 }
+
