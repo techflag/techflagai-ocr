@@ -92,6 +92,27 @@
           </div>
         </a-col>
       </a-row>
+      <a-row>
+        <a-col :span="24">
+          <div class="dataset-upload">
+            <div class="upload-label">
+              <span class="label">模型：</span>
+            </div>
+            <div class="upload-content">
+              <a-select v-model="producte_line" @change="val => producte_line = val" style="width: 200px">
+                <a-select-option 
+                  v-for="option in modelOptions" 
+                  :key="option.value" 
+                  :value="option.value"
+                  :selected="option.value === producte_line"
+                >
+                  {{ option.label }}
+                </a-select-option>
+              </a-select>
+            </div>
+          </div>
+        </a-col>
+      </a-row>
     </a-modal>
   
 </div>
@@ -120,6 +141,12 @@ export default {
       modelName: '',
       open: false,
       loading: false,
+      producte_line: '1',
+      modelOptions: [
+        { value: '1', label: '自训练' },
+        { value: '2', label: '百度OCR' },
+        { value: '3', label: '合合OCR' }
+      ]
     }
   },
   created() {
