@@ -100,6 +100,22 @@
           </div>
         </a-col>
       </a-row>
+      <a-row>
+        <a-col :span="12">
+          <div class="dataset-upload">
+            <div class="upload-label">
+              <span class="label">识别模型</span>
+            </div>
+            <div class="upload-content">
+              <a-select v-model="model_id" size="small" style="width:300px" @change="handleModelChange">
+                <a-select-option v-for="model in modelList" :key="model.id" :value="model.id">
+                  {{ model.name }}
+                </a-select-option>
+              </a-select>
+            </div>
+          </div>
+        </a-col>
+      </a-row>
       <a-row style="margin-top: 10px;">
         <a-col :span="12">
           <div class="dataset-upload">
@@ -107,8 +123,13 @@
               <span class="label">选择文件:</span>
             </div>
             <div class="upload-content">
-              <a-upload-dragger v-model="fileList" name="file" :multiple="true"
-                action="https://www.mocky.io/v2/5cc8019d300000980a055e76" @change="handleChange">
+              <a-upload-dragger 
+                v-model="fileList" 
+                name="file" 
+                :multiple="true"
+                :before-upload="falseFn" 
+                @change="handleChange"
+              >
                 <p class="ant-upload-drag-icon">
                   <a-icon type="file-add" theme="twoTone" />
                 </p>
@@ -131,6 +152,8 @@ import {
   statusCount, task_names, update_data_set
 } from '@/services/tasks'
 import { list as datasetList } from '@/services/datasets'
+import { list as get_model_list } from '@/services/models' 
+
 export default {
   name: 'TasksList',
   components: { HeadInfo },
@@ -138,7 +161,7 @@ export default {
     return {
       current: 1,
       taskTotal: 0,
-      status: 2,
+      status: 2, // Default filter status, not related to individual task submission status
       taskName: '',
       fileList: [],
       open: false,
@@ -151,19 +174,51 @@ export default {
         "1": 0,
         "2": 0
       },
-      data_set_id: '',
-      datasetList: [],
-      selectedTaskName: '',
-      taskNameList: []
+      data_set_id: '',      // For filtering by dataset
+      datasetList: [],      // List of datasets for filtering
+      selectedTaskName: '', // For filtering by task name
+      taskNameList: [],     // List of unique task names for filtering
+      modelList: [],        // List of models for the upload modal's select dropdown
+      model_id: null,       // Selected model ID from the upload modal
     }
   },
   created() {
     this.fetchTasks()
     this.fetchStatusCount()
-    this.fetchDatasets() // 初始化时加载数据集列表
+    this.fetchDatasets() 
     this.fetchTaskNames()
+    this.fetchActiveModelsForSelection() // Fetch active models for the dropdown
   },
   methods: {
+    async fetchActiveModelsForSelection() {
+      try {
+        const res = await get_model_list({ use_status: 1 }); // Call with use_status: 1
+        if (res.data && res.data.code === 200 && res.data.data) {
+          this.modelList = res.data.data.record || [];
+        } else {
+          this.modelList = [];
+          this.$message.error('获取可用识别模型列表失败: ' + (res.data.msg || '未知错误'));
+        }
+      } catch (error) {
+        this.modelList = [];
+        this.$message.error('请求识别模型列表失败: ' + (error.message || '网络错误'));
+      }
+    },
+    /**
+     * 阻止 antd Upload 组件的默认上传行为
+     * @returns {boolean}总是返回 false
+     */
+    falseFn() {
+      return false;
+    },
+    /**
+     * 处理识别模型选择变化的事件
+     * @param {*} value - 当前选中的模型ID
+     */
+    handleModelChange(value) {
+      console.log('识别模型已更改为:', value);
+      this.model_id = value;
+    },
     async fetchStatusCount() {
       try {
         const res = await statusCount()
@@ -195,6 +250,10 @@ export default {
     },
     addNew() {
       this.open = true;
+      // Reset form fields for the modal
+      this.taskName = '';
+      this.model_id = null; // Reset selected model
+      this.fileList = [];
     },
     sampleStautsOnChange(e) {
       this.current = 1
@@ -230,37 +289,61 @@ export default {
 
     handleCancel() {
       this.open = false;
+      this.taskName = '';
+      this.model_id = null;
+      this.fileList = [];
     },
     async handleOk() {
-      if (!this.taskName) {
+      if (!this.taskName || this.taskName.trim() === '') {
         this.$message.warning('请输入任务名称')
         return
       }
-      if (this.fileList.length === 0) {
+      if (!this.model_id) { // Validate if a model is selected
+        this.$message.warning('请选择识别模型')
+        return
+      }
+      // this.fileList 现在应该是由 handleChange 更新的原始文件对象数组
+      if (!this.fileList || this.fileList.length === 0) {
         this.$message.warning('请选择上传文件')
         return
       }
 
       this.loading = true
       try {
-        await save({
-          taskName: this.taskName
-        }, this.fileList[0])
+        // FormData 通常用于文件上传
+        const formData = new FormData();
+        formData.append('taskName', this.taskName);
+        formData.append('model_id', this.model_id);
+        
+        // 将文件列表中的每个文件附加到 FormData
+        // 后端需要能够处理名为 'files' (或您选择的任何名称)的多个文件
+        this.fileList.forEach(file => {
+          formData.append('files', file); // 'files' 是键名，确保后端能接收此键名下的文件数组
+        });
+
+        // 假设 save 服务现在接收 FormData
+        await save(formData) 
         this.$message.success('上传成功')
         this.fetchTasks() // 刷新列表
+        this.fetchStatusCount(); // Refresh status counts
       } catch (error) {
-        this.$message.error('上传失败')
+        this.$message.error('上传失败: ' + (error.response?.data?.msg || error.message || '未知错误'));
       } finally {
         this.loading = false
         this.open = false
+        // Reset fields after submission
         this.taskName = ''
-        this.fileList = []
+        this.model_id = null // Reset selected model
+        this.fileList = [] // 清空文件列表
       }
     },
     handleChange(info) {
-      if (info.file.status === 'done') {
-        this.fileList = [info.file.originFileObj]
-      }
+      // info.fileList 是 Upload 组件内部管理的文件列表
+      // 我们需要从中提取原始 File 对象，并更新到 this.fileList
+      // 以便 handleOk 方法可以使用这些原始文件对象
+      this.fileList = info.fileList.map(file => file.originFileObj).filter(file => file);
+      // 注意：v-model="fileList" 在这种手动处理模式下可能不会按预期双向绑定原始文件对象，
+      // 因此在 @change 中显式更新 this.fileList 是必要的。
     },
     getTaskImage(uploadImage) {
       if (!uploadImage) {
