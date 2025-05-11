@@ -2,7 +2,7 @@
     <div class="ann_main" ref="annContainer">
       <div id="image-container" ref="imageContainer">
         <svg id="ocr-svg" ref="ocrSvg" class="ocrsvg" v-show="showSvgImage"></svg>
-        <img id="image" ref="imageElement" :src="src" v-show="showBackgroundImage" style="height: auto;width: 100%"
+        <img id="image" ref="imageElement" :src="imgsrc" v-show="showBackgroundImage" style="height: auto;width: 100%"
              alt="Image to OCR"/>
       </div>
     </div>
@@ -16,7 +16,7 @@
   export default {
   
     props: {
-      src: {
+      imgsrc: {
         type: String,
         default: ''
       },
@@ -32,7 +32,6 @@
     data() {
       return {
         newText: '',
-        // imageSrc, // 直接返回引入的图片
         selectedBoxIndex: null,
         selectedType: null,
         dragging: false,
@@ -57,7 +56,6 @@
         offsetY: 0,  // 拖动时的纵向偏移量,
         dsindex: '',
         dsid: '',
-        image_base_url: 'import.meta.env.VITE_API_BASE_URL',
         base_ann_resp: null,
         imageElement: null,
         svg: null,

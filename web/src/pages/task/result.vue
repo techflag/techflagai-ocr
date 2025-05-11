@@ -1,12 +1,31 @@
 <template>
   <div class="page-layout">
+    <a-row style=" margin-top: 24px; ">
+      <a-col :span="6" style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center;">
+          <span class="label" style="margin-right: 8px;">识别模型</span>
+          <a-select v-model="model_id" size="small" style="width:200px">
+            <a-select-option v-for="model in modelList" :key="model.id" :value="model.id">
+              {{ model.name }}
+            </a-select-option>
+          </a-select>
+        </div>
+        <a-button type="primary"
+                   size="small"
+                   @click="recognition_click()"
+        >
+          重新识别
+        </a-button>
+      </a-col>
+    </a-row>  
     <a-card class="card-list">
     
       <a-layout style="height: calc(100vh - 150px);">
         <a-layout-sider width="50%" style=" background: #fff;">
-          <inc-img v-if="form.output_image && Object.keys(form.output_json).length > 0"
+          <inc-img v-if="form.upload_image "
                  :style="{height: span == 24 ? '250px': '92%','margin-bottom':'5px','padding-top': span == 24 ? '0px' : '20px'}">
-            <recognition :src="showUrl + form.output_image" @boxClick="boxClick" :ocr-data="form.output_json"
+           
+                 <recognition :imgsrc="showUrl + form.upload_image" @boxClick="boxClick" :ocr-data="form.output_json"
                            style="height: 100%;width: 100%"></recognition>
         </inc-img>
         <div style="height: 10px;width:100%;display: flex; justify-content: center;">
@@ -54,9 +73,10 @@
 import Luckysheet from "@/components/Luckysheet/index.vue";
 import Recognition from "@/components/ocr/Recognition.vue";
 import IncImg from "@/components/IncImg";
+import { list as get_model_list } from '@/services/models' 
 import { 
   save, 
-  read_excel, save_version, cutting_img,submit, update,
+  read_excel, recognition, cutting_img,submit, update,
   find
 } from '@/services/tasks'
 
@@ -77,6 +97,7 @@ export default {
         id: undefined,
         output_excel: '',
         output_image:'',
+        upload_image:'',
         output_json:{},
         json_content: {},
         confirm_status: 0,
@@ -100,34 +121,102 @@ export default {
       loading: false,
       arranged: false,
       icon_name: 'vertical',
+      modelList: [],        // List of models for the upload modal's select dropdown
+      model_id: null,       // Selected model ID from the upload modal
     }
   },
   
   mounted() {
     this.getTaskDetail();
+    this.fetchActiveModelsForSelection();
   },
   methods: {
     async getTaskDetail() {
       try {
-        const taskId = this.$route.query.id
+        const taskId = this.$route.query.id; // 保持原有逻辑
         if (!taskId) {
-          this.$message.error('缺少任务ID参数')
-          return
+          this.$message.error('缺少任务ID参数');
+          return;
         }
         this.form.id = taskId;
-        const response = await find({ id: taskId })
+        const response = await find({ id: taskId });
         let taskData = response.data.data;
+        
+
         if (taskData) {
-          this.form.output_json = taskData.output_json;
-          this.form.output_image = taskData.output_image;
+          this.form.output_json = taskData.output_json || {}; // 如果 output_json 可能为 null/undefined，则默认为空对象
+          this.form.upload_image = taskData.upload_image || ''; // 如果 upload_image 可能为 null/undefined，则默认为空字符串
           this.form.output_excel = taskData.output_excel;
+          this.model_id = taskData.model_id || null; // 将 taskData.model_id 赋值给 this.model_id
+
+        } else {
+          this.form.output_json = {};
+          this.form.upload_image = '';
+          this.form.output_excel = '';
+          this.model_id = null; // 如果没有 taskData，也重置 model_id
+          // this.form.confirm_status = 0;
         }
       } catch (error) {
-          const errorMsg = error.response?.data?.message || error.message
-          this.$message.error(`获取任务详情失败：${errorMsg}`)
+          const errorMsg = error.response?.data?.message || error.message;
+          this.$message.error(`获取任务详情失败：${errorMsg}`);
+          // 发生错误时，也建议重置表单
+          this.form.output_json = {};
+          this.form.upload_image = '';
+          this.form.output_excel = '';
+          this.model_id = null; // 发生错误时，也重置 model_id
+          // this.form.confirm_status = 0;
       }
     },
-    
+    async fetchActiveModelsForSelection() {
+      try {
+        const res = await get_model_list({ use_status: 1 }); // Call with use_status: 1
+        if (res.data && res.data.code === 200 && res.data.data) {
+          this.modelList = res.data.data.record || [];
+        } else {
+          this.modelList = [];
+          this.$message.error('获取可用识别模型列表失败: ' + (res.data.msg || '未知错误'));
+        }
+      } catch (error) {
+        this.modelList = [];
+        this.$message.error('请求识别模型列表失败: ' + (error.message || '网络错误'));
+      }
+    },
+
+    async recognition_click() {
+      if (!this.model_id) {
+        this.$message.error('请选择识别模型');
+        return;
+      }
+      if (!this.form.id) {
+        this.$message.error('任务ID不存在，无法进行识别');
+        return;
+      }
+
+      this.loading = true;
+      this.$message.loading('正在重新识别，请稍候...'); // 显示加载提示
+
+      try {
+        const params = {
+          id: this.form.id,
+          model_id: this.model_id
+        };
+        const res = await recognition(params); // 调用 recognition 服务
+
+        if (res.data && res.data.code === 200) {
+          this.$message.success('重新识别成功');
+          await this.getTaskDetail(); // 成功后刷新任务详情
+        } else {
+          this.$message.error(res.data.msg || '重新识别失败，请重试');
+        }
+      } catch (error) {
+        console.error('重新识别请求失败:', error);
+        const errorMsg = error.response?.data?.message || error.message || '重新识别过程中发生错误';
+        this.$message.error(`重新识别失败: ${errorMsg}`);
+      } finally {
+        this.loading = false;
+      }
+    },
+
     boxClick(item) {
       if (!this.luckysheetInstance) {
         this.$refs.luckysheetRef.initLuckysheet()
@@ -262,7 +351,7 @@ export default {
 
 <style lang="less" scoped>
  .card-list{
-    margin-top: 24px;
+    margin-top: 12px;
   }
   
   ::v-deep .jsoneditor-vue {

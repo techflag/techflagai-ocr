@@ -8,24 +8,30 @@ export function query(data) {
     )
 }
 
+export function recognition(data) {
+    return request(
+        '/ocr/task/recognition',
+        'get',
+        data
+    )
+}
+
 export function save(data, files) {
     const formData = new FormData()
-    // 逐个添加文件
-    files.forEach(file => {
-        formData.append('file', file)  // 每个文件单独添加
+    // 确保files是数组
+    const fileArray = Array.isArray(files) ? files : [files]
+    // 添加文件字段
+    fileArray.forEach(file => {
+        formData.append('file', file) // 使用'file'作为字段名
     })
-    formData.append('data_set_id', data)
-    
-    // 调试输出
-    for (let [key, value] of formData.entries()) {
-        console.log(key, value)
-    }
-    
+    // 添加其他数据字段
+    Object.keys(data).forEach(key => {
+        formData.append(key, data[key])
+    })
     return request(
         '/ocr/task/save',
         'post',
-        formData,
-        {'Content-Type': 'multipart/form-data'}
+        formData
     )
 }
 

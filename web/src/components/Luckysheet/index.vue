@@ -13,7 +13,6 @@
 
 <script>
 import LuckyExcel from 'luckyexcel'
-import {showFile} from "@/services/file"
 import {exportExcel} from "@/utils/export"
 
 export default {
@@ -75,12 +74,17 @@ data() {
       data: [{
         name: 'Sheet1'
       }]
-    }
+    },
+    showUrl : process.env.VUE_APP_FILE_BASE_URL || '',
   }
 },
 methods: {
   initLuckysheet() {
-    if (this.isInitialized) return Promise.resolve(window.luckysheet);
+    if (this.isInitialized && window.luckysheet && typeof window.luckysheet.destroy === 'function') { // 更严谨的检查
+        // 如果已经初始化，并且 luckysheet 对象存在且功能正常，可以考虑是否需要重新创建或直接返回
+        // 为了简单起见，如果只是确保创建，可以 return Promise.resolve(window.luckysheet);
+        // 但如果 props (如 config) 可能变化并需要重新创建，则继续执行销毁和创建
+    }
     
     return new Promise((resolve, reject) => {
       if (typeof window.luckysheet === 'undefined') {
@@ -94,11 +98,20 @@ methods: {
         if (window.luckysheet.destroy) {
           window.luckysheet.destroy();
         }
-        window.luckysheet.create(this.options);
+        // 合并传入的 config 和默认的 options
+        const createOptions = {
+          ...this.options, // 包含 container, title, lang, 初始data等
+          ...this.config,  // 用户传入的配置，如 showtoolbar 等
+          allowEdit: this.allowEdit, // 确保 allowEdit 生效
+          showinfobar: false, // 强制不显示信息栏，如果这是全局期望
+          // data: this.options.data, // 确保初始 data 存在，除非 loadExcel 会覆盖
+        };
+        window.luckysheet.create(createOptions);
         this.isInitialized = true;
         resolve(window.luckysheet);
       } catch (error) {
         console.error('Luckysheet初始化失败:', error);
+        this.isInitialized = false; // 初始化失败，重置标记
         reject(error);
       }
     });
@@ -117,39 +130,26 @@ methods: {
 
   async downloadExcel() {
     try {
-      const response = await showFile({
-        name: this.name
-      });
+      // 直接使用 this.showUrl 和 this.name 构建请求 URL
+      let requestUrl = this.name; // 默认情况下，如果 showUrl 为空，则 name 可能已是完整路径或相对路径
+      if (this.showUrl) {
+          const baseUrl = this.showUrl.endsWith('/') ? this.showUrl.slice(0, -1) : this.showUrl;
+          const relativeUrl = this.name.startsWith('/') ? this.name.slice(1) : this.name;
+          requestUrl = `${baseUrl}/${relativeUrl}`;
+      }
+
+      if (!requestUrl) {
+        throw new Error('文件名或路径无效，无法下载文件。');
+      }
+
+      console.log(`Fetching Excel file from: ${requestUrl}`);
+      const fileResponse = await fetch(requestUrl); 
+
+      if (!fileResponse.ok) {
+        throw new Error(`下载文件失败: ${fileResponse.status} ${fileResponse.statusText} (URL: ${requestUrl})`);
+      }
       
-      // 检查响应数据的各种可能情况
-      let rawData;
-      if (!response) {
-        throw new Error('服务器未返回数据');
-      }
-  
-      // 处理不同的响应格式
-      if (response instanceof Blob) {
-        rawData = response;
-      } else if (response instanceof ArrayBuffer) {
-        rawData = response;
-      } else if (response.data) {
-        // 如果是axios响应对象
-        if (response.data instanceof Blob || response.data instanceof ArrayBuffer) {
-          rawData = response.data;
-        } else if (typeof response.data === 'string') {
-          // 如果返回的是错误信息字符串
-          throw new Error(response.data);
-        } else {
-          console.error('未知的响应数据格式:', response);
-          throw new Error('服务器返回的数据格式不支持');
-        }
-      } else if (typeof response === 'string') {
-        // 如果直接返回错误信息
-        throw new Error(response);
-      } else {
-        console.error('未知的响应格式:', response);
-        throw new Error('服务器返回数据格式不正确');
-      }
+      const rawData = await fileResponse.blob(); // 获取Blob数据
   
       // 创建blob对象
       const blob = rawData instanceof Blob ? rawData : new Blob([rawData], {
@@ -160,19 +160,19 @@ methods: {
       if (blob.size === 0) {
         throw new Error('文件内容为空');
       }
-    if (blob.size < 100) { // Excel文件通常至少有几KB
-      throw new Error('文件数据不完整');
-    }
+      if (blob.size < 50) { // Excel文件通常至少有几KB
+        console.warn(`文件数据大小为 ${blob.size} bytes，可能不完整或格式不正确。文件名: ${this.name}`);
+      }
   
       await this.loadExcel(blob);
     } catch(error) {
-      console.error('文件下载失败:', error);
+      console.error(`文件下载或处理失败 (文件名: ${this.name}):`, error);
       this.$emit('error', {
         type: 'download',
-        message: `文件下载失败: ${error.message}`,
+        message: `文件下载或处理失败: ${error.message}`,
         detail: {
           fileName: this.name,
-          error: error.stack
+          error: error.stack || error.toString()
         }
       });
     }
@@ -196,17 +196,18 @@ methods: {
             }
 
             exportJson.sheets.forEach(item => {
-              item.zoomRatio = 0.85;
+              item.zoomRatio = 0.85; // 设置缩放比例
             });
-
+            
+            // 创建Luckysheet实例时合并配置
             window.luckysheet.create({
               container: 'luckysheet',
-              ...this.config,
+              ...this.config, // 用户传入的配置
               allowEdit: this.allowEdit,
-              showinfobar: false,
-              data: exportJson.sheets,
-              lang: 'zh',
-              title: '',
+              showinfobar: false, // 通常在展示数据时隐藏
+              data: exportJson.sheets, // 加载Excel数据
+              lang: 'zh', // 语言
+              title: exportJson.info?.name || this.name || '在线表格', // 表格标题
               hook: {
                 cellMousedownBefore: (cell, position) => {
                   this.$emit('cellMousedownBefore', cell, position);
@@ -216,6 +217,7 @@ methods: {
                 }
               }
             });
+            this.isInitialized = true; // 确保在成功创建后标记为已初始化
             resolve();
           } catch (error) {
             reject(error);
@@ -231,11 +233,18 @@ methods: {
 mounted() {
   if (typeof window.luckysheet === 'undefined') {
     console.error('Luckysheet library not loaded');
+    this.$emit('error', { type: 'initialization', message: 'Luckysheet library not loaded' });
     return;
   }
   this.$nextTick(() => {
-    this.initLuckysheet();
-    this.downloadExcel()
+    this.initLuckysheet().then(() => {
+      if (this.name) { // 确保name有效再尝试下载
+        this.downloadExcel();
+      }
+    }).catch(error => {
+      console.error("Luckysheet 初始化失败 (mounted):", error);
+      this.$emit('error', { type: 'initialization', message: `Luckysheet 初始化失败: ${error.message}` });
+    });
   });
 },
 }

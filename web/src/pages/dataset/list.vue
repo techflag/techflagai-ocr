@@ -157,7 +157,6 @@ export default {
     handleOk() {
       this.loading = true;
       console.log('this.fileList', this.fileList)
-      // 调用save方法上传
       dataSetupload(this.upload_dataset_id, this.fileList)
         .then(res => {
           this.loading = false;

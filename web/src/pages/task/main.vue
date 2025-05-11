@@ -310,46 +310,42 @@ export default {
 
       this.loading = true
       try {
-        // FormData 通常用于文件上传
         const formData = new FormData();
-        formData.append('taskName', this.taskName);
+        formData.append('name', this.taskName);
         formData.append('model_id', this.model_id);
         
-        // 将文件列表中的每个文件附加到 FormData
-        // 后端需要能够处理名为 'files' (或您选择的任何名称)的多个文件
-        this.fileList.forEach(file => {
-          formData.append('files', file); // 'files' 是键名，确保后端能接收此键名下的文件数组
-        });
-
-        // 假设 save 服务现在接收 FormData
-        await save(formData) 
-        this.$message.success('上传成功')
-        this.fetchTasks() // 刷新列表
-        this.fetchStatusCount(); // Refresh status counts
+        // 修改为正确调用save方法
+        const res = await save({
+          name: this.taskName,
+          model_id: this.model_id
+        }, this.fileList);
+        
+        if (res.data.code === 200) {
+          this.$message.success('上传成功');
+          this.fetchTasks();
+          this.fetchStatusCount();
+        } else {
+          this.$message.error(res.data.msg || '上传失败');
+        }
       } catch (error) {
         this.$message.error('上传失败: ' + (error.response?.data?.msg || error.message || '未知错误'));
       } finally {
         this.loading = false
         this.open = false
-        // Reset fields after submission
         this.taskName = ''
-        this.model_id = null // Reset selected model
-        this.fileList = [] // 清空文件列表
+        this.model_id = null
+        this.fileList = []
       }
     },
     handleChange(info) {
-      // info.fileList 是 Upload 组件内部管理的文件列表
-      // 我们需要从中提取原始 File 对象，并更新到 this.fileList
-      // 以便 handleOk 方法可以使用这些原始文件对象
+      
       this.fileList = info.fileList.map(file => file.originFileObj).filter(file => file);
-      // 注意：v-model="fileList" 在这种手动处理模式下可能不会按预期双向绑定原始文件对象，
-      // 因此在 @change 中显式更新 this.fileList 是必要的。
     },
     getTaskImage(uploadImage) {
       if (!uploadImage) {
         return 'https://gw.alipayobjects.com/zos/rmsportal/iZBVOIhGJiAnhplqjvZW.png'
       }
-      return `${process.env.VUE_APP_API_BASE_URL}/file/${uploadImage}`
+      return `${process.env.VUE_APP_FILE_BASE_URL}${uploadImage}`
     },
     handleDatasetChange(value) {
       this.current = 1
