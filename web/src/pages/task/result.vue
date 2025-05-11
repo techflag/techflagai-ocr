@@ -22,11 +22,15 @@
     
       <a-layout style="height: calc(100vh - 150px);">
         <a-layout-sider width="50%" style=" background: #fff;">
-          <inc-img v-if="form.upload_image "
+          <inc-img v-if="form.upload_image && form.output_json && Object.keys(form.output_json).length > 0"
                  :style="{height: span == 24 ? '250px': '92%','margin-bottom':'5px','padding-top': span == 24 ? '0px' : '20px'}">
            
-                 <recognition :imgsrc="showUrl + form.upload_image" @boxClick="boxClick" :ocr-data="form.output_json"
-                           style="height: 100%;width: 100%"></recognition>
+                 <recognition :key="recognitionKey"
+                            :imgsrc="showUrl + form.upload_image" 
+                            @boxClick="boxClick" 
+                            :ocr-data="form.output_json"
+                            style="height: 100%;width: 100%">
+                 </recognition>
         </inc-img>
         <div style="height: 10px;width:100%;display: flex; justify-content: center;">
           <svg width="25" height="25" xmlns="http://www.w3.org/2000/svg">
@@ -123,12 +127,25 @@ export default {
       icon_name: 'vertical',
       modelList: [],        // List of models for the upload modal's select dropdown
       model_id: null,       // Selected model ID from the upload modal
+      recognitionKey: 0,  // 添加这一行
     }
   },
   
   mounted() {
     this.getTaskDetail();
     this.fetchActiveModelsForSelection();
+    // 如果有 output_excel，初始化 luckysheet
+    if (this.form.output_excel) {
+      this.$nextTick(() => {
+        this.$refs.luckysheetRef?.initLuckysheet()
+          .then(luckysheet => {
+            this.luckysheetInstance = luckysheet;
+          })
+          .catch(error => {
+            console.error('Luckysheet初始化失败:', error);
+          });
+      });
+    }
   },
   methods: {
     async getTaskDetail() {
@@ -144,11 +161,11 @@ export default {
         
 
         if (taskData) {
-          this.form.output_json = taskData.output_json || {}; // 如果 output_json 可能为 null/undefined，则默认为空对象
-          this.form.upload_image = taskData.upload_image || ''; // 如果 upload_image 可能为 null/undefined，则默认为空字符串
+          this.form.output_json = taskData.output_json || {};
+          this.form.upload_image = taskData.upload_image || '';
           this.form.output_excel = taskData.output_excel;
-          this.model_id = taskData.model_id || null; // 将 taskData.model_id 赋值给 this.model_id
-
+          this.model_id = taskData.model_id || null;
+          this.recognitionKey += 1;  // 添加这一行，强制 recognition 组件重新渲染
         } else {
           this.form.output_json = {};
           this.form.upload_image = '';
@@ -218,18 +235,20 @@ export default {
     },
 
     boxClick(item) {
-      if (!this.luckysheetInstance) {
-        this.$refs.luckysheetRef.initLuckysheet()
-          .then(luckysheet => {
-            this.luckysheetInstance = luckysheet;
-            this.doLuckysheetAction(item);
-          })
-          .catch(error => {
-            console.error('操作失败:', error);
-            this.$message.error('表格操作失败');
-          });
-      } else {
+      console.log('boxClick', item)
+      // 确保 luckysheet 已经初始化
+      if (this.luckysheetInstance && typeof this.luckysheetInstance.setRangeShow === 'function') {
         this.doLuckysheetAction(item);
+      } else {
+        // 如果实例不存在或方法不可用，尝试重新获取实例
+        const currentInstance = window.luckysheet;
+        if (currentInstance && typeof currentInstance.setRangeShow === 'function') {
+          this.luckysheetInstance = currentInstance;
+          this.doLuckysheetAction(item);
+        } else {
+          console.error('Luckysheet 实例未就绪');
+          this.$message.error('表格未准备就绪，请稍后重试');
+        }
       }
     },
     doLuckysheetAction(item) {
