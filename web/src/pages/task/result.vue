@@ -289,7 +289,7 @@ export default {
 
       // 只有当值实际提取出来后才记录修改 (包括空字符串 "" 作为一次有效的清空操作)
       if (value !== undefined && value !== null) {
-        this.modify_the_value.push({
+        this.modify_the_value.push({ 
           row: row,
           col: col,
           value: String(value) // 确保值为字符串类型
