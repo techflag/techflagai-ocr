@@ -80,7 +80,7 @@ import IncImg from "@/components/IncImg";
 import { list as get_model_list } from '@/services/models' 
 import { 
   save, 
-  read_excel, recognition, cutting_img,submit, update,
+  read_excel, recognition, update_by_excel,submit, update,
   find
 } from '@/services/tasks'
 
@@ -296,8 +296,8 @@ export default {
       try {
         let res = await upload(formData);
         if (res.data.code === 200) {
-          let cres = await cutting_img({
-            task_id: this.form.id,
+          let cres = await update_by_excel({
+            id: this.form.id,
             modify_the_value: this.modify_the_value || []
           });
           
@@ -327,11 +327,10 @@ export default {
           type: 'warning'
         });
         
-        this.$modal.loading();
+        this.$message.loading('正在保存，请稍候...'); // 显示加载提示
         const res = await read_excel({
           id: this.form.id
         });
-        this.$modal.closeLoading();
     
         if (res.code === 200) {
           const submitRes = await submit(res.data);
@@ -340,14 +339,13 @@ export default {
               id: this.form.id,
               confirm_status: 1
             });
-            this.$message.success('提交成功');
+            this.$message.success('保存成功');
             this.init();
             return;
           }
         }
-        this.$message.error(res.msg || '提交失败');
+        this.$message.error(res.msg || '保存失败');
       } catch (error) {
-        this.$modal.closeLoading();
         if (error !== 'cancel') {
           this.$message.error(error.message || '操作取消');
         }

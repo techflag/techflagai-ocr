@@ -147,7 +147,7 @@ export default {
             let resp= response.data.data;
             let _annotation_result = resp.output_json;
             this.ocrData = _annotation_result;
-            this.imageSrc = resp.output_image
+            this.imageSrc = resp.upload_image
             this.imageElement = this.$refs.imageElement;
             this.svg = this.$refs.ocrSvg;
 

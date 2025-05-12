@@ -56,6 +56,19 @@ export function read_excel(data) {
     )
 }
 
+/**
+ * 更新excel修改后对应的json值
+ * @param {g} data 
+ * @returns 
+ */
+export function update_by_excel(data) {
+    return request(
+        '/ocr/task/update_by_excel',
+        'post',
+        data
+    )
+}
+
 export function submit(data) {
     return request(
         '/ocr/task/submit',
