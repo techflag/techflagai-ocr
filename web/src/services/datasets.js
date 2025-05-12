@@ -31,3 +31,16 @@ export function deleteDataset(data) {
     data
   )
 }
+
+/**
+ * 更新数据集
+ * @param {} data 
+ * @returns 
+ */
+export function annotation_update(data) {
+  return request(
+    '/ocr/dataset/annotation_update',
+    'post',
+    data
+  )
+}

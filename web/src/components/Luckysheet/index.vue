@@ -2,7 +2,7 @@
   <div class="box">
     <a-button  type="primary"
                size="small"
-               style="z-index: 99999;position: absolute;right: 30px;top: 10px"
+               style="z-index: 99999;position: absolute;right: 30px;top: -40px"
                @click="saveExcel"
     >
       {{ save_txt }}
@@ -24,7 +24,7 @@ props: {
   },
   save_txt: {
     type: String,
-    default: '保存'
+    default: '暂存'
   },
   save_flag: {
     type: Boolean,

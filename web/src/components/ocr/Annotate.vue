@@ -42,7 +42,6 @@
             <a-input  v-model="newText" placeholder="请输入文字" style="width: 150px;"/>
             <a-button type="primary" @click="handleNewTextButtonClick">纠偏</a-button>
             <a-button type="primary" @click="handleDownloadButtonClick" >保存</a-button>
-            <a-button type="primary" @click="handleDownloadButtonFormatClick" >下载训练数据</a-button>
             <a-button @click="toggleBackgroundImage">显示/隐藏背景图</a-button>
             <a-button @click="toggleSvgImage">显示/隐藏标注</a-button>
             <a-button @click="togglePolygons">显示/隐藏标注框</a-button>
@@ -53,7 +52,7 @@
 </template>
 
 <script>
-import {getDataset, updateDataset} from "@/services/datasets.js";
+import {getDataset, annotation_update} from "@/services/datasets.js";
 import {
 find
 } from '@/services/tasks'
@@ -507,15 +506,9 @@ export default {
         } else {
           console.error('Text element not found for uniqueId:', this.selectedBoxIndex);
         }
-        this.$message.success({
-          message: '纠偏更新成功！',
-          duration: 1000 // 持续时间，单位毫秒
-        });
+        this.$message.success('纠偏更新成功！');
       } else {
-          this.$message.error({
-          message: '纠偏更新失败！',
-          duration: 1000 // 持续时间，单位毫秒
-        });
+          this.$message.error('纠偏更新失败！');
       }
 
       console.log('newtext:', inputValue);
@@ -575,18 +568,7 @@ export default {
     handleDownloadButtonClick() {
       this.updateDataset();
     },
-    handleDownloadButtonFormatClick() {
-      let result = this.formatAnnotationTrain();
-
-      // 下载处理后的数据
-      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(result, null, 2));
-      const downloadAnchorNode = document.createElement('a');
-      downloadAnchorNode.setAttribute('href', dataStr);
-      downloadAnchorNode.setAttribute('download', 'updated_ocr_data_formart.json');
-      document.body.appendChild(downloadAnchorNode);
-      downloadAnchorNode.click();
-      downloadAnchorNode.remove();
-    },
+    
 
 
     handleDrawButtonClick() {
@@ -797,15 +779,17 @@ export default {
     updateDataset() {
       // 准备数据
       let annotation_train_result = this.ocrData;
-      let annotation_result = this.ocrData;
-      console.log('annotation_result:',JSON.stringify(annotation_result))
-      //annotation_result = {"tables": [{"lines": annotation_result}]};
       let dataset_id = this.dsid;
-      // 调用更新接口
-      updateDataset(dataset_id,  annotation_train_result)
+      // 调用更新接口dataset_id,  annotation_train_result
+      let param={
+        id: dataset_id,
+        output_json: annotation_train_result,
+      }
+      annotation_update(param)
           .then(response => {
+            console.log('Update response:', response);
             // 检查响应中的 status_code
-            if (response.status_code === 200) {
+            if (response.data.code === 200) {
               // 显示成功提示
               this.$message.success({
                 message: '更新成功！',

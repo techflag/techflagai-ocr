@@ -118,7 +118,6 @@
 
 <script>
 import SettingItem from './SettingItem'
-import {ColorCheckbox, ImgCheckbox} from '@/components/checkbox'
 import Clipboard from 'clipboard'
 import { mapState, mapMutations } from 'vuex'
 import {formatConfig} from '@/utils/formatter'
@@ -127,12 +126,10 @@ import sysConfig from '@/config/config'
 import fastEqual from 'fast-deep-equal'
 import deepMerge from 'deepmerge'
 
-const ColorCheckboxGroup = ColorCheckbox.Group
-const ImgCheckboxGroup = ImgCheckbox.Group
 export default {
   name: 'Setting',
   i18n: require('./i18n'),
-  components: {ImgCheckboxGroup, ImgCheckbox, ColorCheckboxGroup, ColorCheckbox, SettingItem},
+  components: {  SettingItem},
   data() {
     return {
       copyConfig: 'Sorry, you have copied nothing O(∩_∩)O~',

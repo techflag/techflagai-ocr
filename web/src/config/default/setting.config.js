@@ -17,7 +17,7 @@ module.exports = {
   multiPage: false,                     //多页签模式，true:开启，false:不开启
   cachePage: true,                      //是否缓存页面数据，仅多页签模式下生效，true 缓存, false 不缓存
   hideSetting: false,                   //隐藏设置抽屉，true:隐藏，false:不隐藏
-  systemName: 'Vue Antd Admin',         //系统名称
+  systemName: '旗讯OCR识别系统',         //系统名称
   copyright: '2025 Techflag 旗讯数字',     //copyright
   asyncRoutes: false,                   //异步加载路由，true:开启，false:不开启
   showPageTitle: true,                  //是否显示页面标题（PageLayout 布局中的页面标题），true:显示，false:不显示
@@ -29,6 +29,6 @@ module.exports = {
   },
   footerLinks: [                        //页面底部链接，{link: '链接地址', name: '名称/显示文字', icon: '图标，支持 ant design vue 图标库'}
     {link: 'http://techflag.cn', name: '官网'},
-    {link: 'https://github.com/iczer/vue-antd-admin', icon: 'github'},
+    {link: 'https://gitee.com/techflag/techflagai-ocr', icon: 'github'},
   ],
 }

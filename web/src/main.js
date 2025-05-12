@@ -6,7 +6,6 @@ import Antd from 'ant-design-vue'
 // 添加图标引入
 import * as Icons from '@ant-design/icons-vue'
 import Viser from 'viser-vue'
-import '@/mock'
 import store from './store'
 import 'animate.css/source/animate.css'
 import Plugins from '@/plugins'

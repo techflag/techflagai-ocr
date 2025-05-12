@@ -1,23 +1,55 @@
 <template>
   <div class="page-layout">
     <a-row style=" margin-top: 24px; ">
-      <a-col :span="6" style="display: flex; align-items: center; justify-content: space-between;">
+      <a-col :span="5" style="display: flex; align-items: center; justify-content: space-between;">
         <div style="display: flex; align-items: center;">
           <span class="label" style="margin-right: 8px;">识别模型</span>
-          <a-select v-model="model_id" size="small" style="width:200px">
+          <a-select v-model="model_id" size="small" style="width:150px">
             <a-select-option v-for="model in modelList" :key="model.id" :value="model.id">
               {{ model.name }}
             </a-select-option>
           </a-select>
-        </div>
-        <a-button type="primary"
+          <a-button type="primary"
                    size="small"
+                   style=" margin-left: 10px; "
                    @click="recognition_click()"
         >
           重新识别
         </a-button>
+        </div>
+        
       </a-col>
-    </a-row>  
+      <a-col :span="5" style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center;">
+          <span class="label" style="margin-right: 8px;">识别结构</span>
+          <a-select v-model="structure_id" size="small" style="width:150px">
+            <a-select-option v-for="structure in structureList" :key="structure.id" :value="structure.id">
+              {{ structure.name }}
+            </a-select-option>
+          </a-select>
+          <span>
+           <a-tooltip title="
+         识别结构预先设置完成，与识别的Excel对应，识别结果与识别结构一一对应。
+          您可以在「识别结构」中添加、修改、删除识别结构。识别结果会【提交】同步到其他系统中。
+        ">
+          <a-icon type="info-circle" style="margin-left: 8px;" />
+        </a-tooltip></span>
+        </div>
+        
+      </a-col>
+      <a-col :span="14" style="justify-content: flex-end;text-align: right;padding-right: 170px;">
+        <span>
+            注意：<a-tooltip title="
+          1. 左侧的 SVG 图层可能与 Excel 中的单元格不完全对应。
+          2. 您可以通过操作（右击） Excel 来进行调整，通常这种不一致是由于 Excel 中多出了一些行，删除一些行后调试即可。
+          3. 调试的方式是点击左侧 SVG 图层格子能够准确定位到左侧 Excel 上的单元格。
+          4. 如果已经设置了数据结构，建议不要调整 Excel，以免造成数据同步到其他系统时无法根据规则提取。
+        ">
+          <a-icon type="info-circle" style="margin-left: 8px;" />
+        </a-tooltip></span>
+      </a-col>
+      
+    </a-row>
     <a-card class="card-list">
     
       <a-layout style="height: calc(100vh - 150px);">
@@ -57,7 +89,7 @@
         </luckysheet>
         <a-button type="primary"
                            size="small"
-                           style="z-index: 999;position: absolute;right: 100px;top: 10px"
+                           style="z-index: 999;position: absolute;right: 100px;top: -40px"
                            @click="confirmClick()"
                 >
                   {{ form.confirm_status == 1 ? '重新提交' : '提交' }}
@@ -78,6 +110,7 @@ import Luckysheet from "@/components/Luckysheet/index.vue";
 import Recognition from "@/components/ocr/Recognition.vue";
 import IncImg from "@/components/IncImg";
 import { list as get_model_list } from '@/services/models' 
+import { list as get_structure_list} from '@/services/structure'
 import { 
   save, 
   read_excel, recognition, update_by_excel,submit, update,
@@ -128,12 +161,15 @@ export default {
       modelList: [],        // List of models for the upload modal's select dropdown
       model_id: null,       // Selected model ID from the upload modal
       recognitionKey: 0,  // 添加这一行
+      structureList: [],
+      structure_id: null,
     }
   },
   
   mounted() {
     this.getTaskDetail();
     this.fetchActiveModelsForSelection();
+    this.getStructureList();
     // 如果有 output_excel，初始化 luckysheet
     if (this.form.output_excel) {
       this.$nextTick(() => {
@@ -184,6 +220,26 @@ export default {
           // this.form.confirm_status = 0;
       }
     },
+
+    async getStructureList() {
+      try {
+        const res = await get_structure_list({
+          page: 1,
+          size: 100
+        })
+        const structureRes = res.data
+        if (structureRes.code === 200) {
+          const { total, record } = structureRes.data
+          this.structureList = record.map(item => ({
+            ...item,
+            key: item.id
+          }))
+        }
+      } catch (error) {
+        this.$message.error('获取结构化规则列表失败')
+      }
+    },
+
     async fetchActiveModelsForSelection() {
       try {
         const res = await get_model_list({ use_status: 1 }); // Call with use_status: 1
@@ -316,14 +372,14 @@ export default {
           this.modify_the_value = [];
           console.log('cres', cres.data.code)
           if (cres.data.code === 200) {
-            this.$message.success('保存成功');
+            this.$message.success('暂存成功');
             this.getTaskDetail();
             return;
           }else{
-          this.$message.error('保存失败');
+          this.$message.error('暂存失败');
         }
         }else{
-          this.$message.error('保存失败');
+          this.$message.error('暂存失败');
         }
         
       } catch (error) {

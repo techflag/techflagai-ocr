@@ -13,47 +13,7 @@
       <a-layout>
       
       <a-layout>
-        <a-layout-sider width="220" style="background: #fff; padding: 24px;">
-          <!-- 选择框部分 -->
-          <div class="sider-header">
-            <a-select
-              style="width: 100%; margin-bottom: 16px;"
-              placeholder="请选择标签类型"
-              @change="handleTypeChange"
-            >
-              <a-select-option value="1">表格</a-select-option>
-              <a-select-option value="2">发票</a-select-option>
-              <a-select-option value="3">合同</a-select-option>
-            </a-select>
-          </div>
-          
-          <!-- 图片列表部分 -->
-          <div class="image-list">
-            <a-list
-              :dataSource="fileList"
-              :pagination="false"
-              size="small"
-            >
-              <a-list-item slot="renderItem" slot-scope="item">
-                <a-card hoverable @click="handleImageClick(item)">
-                  <img 
-                    slot="cover" 
-                    :src="item.imageUrl" 
-                    alt="图片"
-                    style="height: 100px; object-fit: cover;"
-                  />
-                  <a-card-meta :title="item.name"></a-card-meta>
-                </a-card>
-              </a-list-item>
-            </a-list>
-          </div>
-
-          <!-- 分页部分 -->
-          <div class="pagination" style="text-align: center; margin-top: 16px;">
-            <a-pagination size="small" v-model="current" :show-total="total => `共 ${total} 条记录`" :page-size.sync="pageSize"
-        :total="datasetTotal" show-less-items @change="onPageChange" />
-          </div>
-        </a-layout-sider>
+        
         <a-layout-content style="padding: 24px; background: #fff; min-height: 280px;">
           <Annotate ref="annotate" />
         </a-layout-content>
