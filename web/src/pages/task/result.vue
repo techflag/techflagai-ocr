@@ -264,27 +264,39 @@ export default {
     },
     // 单元格更新回调
     cellUpdated(r, c, oldValue, newValue) {
-      var value = newValue.v
-      if (!value && newValue?.ct?.s) {
-        value = newValue?.ct?.s[newValue?.ct?.s.length -1]?.v
+      var value = newValue.v;
+      if (value === undefined || value === null) { // 检查 undefined 和 null
+        if (newValue?.ct?.s && newValue.ct.s.length > 0) {
+          value = newValue.ct.s[newValue.ct.s.length - 1]?.v;
+        }
       }
-      var row = []
-      var col = []
-      if (newValue.mc) {
-        row = [newValue.mc.r, newValue.mc.r + newValue.mc.rs]
-        col = [newValue.mc.c, newValue.mc.c + newValue.mc.cs]
-      } else {
-        row = [r, r + 1]
-        col = [c, c + 1]
+
+      var row = [];
+      var col = [];
+      console.log('cellUpdated - newValue:', JSON.stringify(newValue));
+
+      if (newValue.mc) { // 如果是合并单元格
+        console.log('----------------innn new view (merged cell) ----');
+        row = [newValue.mc.r, newValue.mc.r + newValue.mc.rs];
+        col = [newValue.mc.c, newValue.mc.c + newValue.mc.cs];
+        console.log(`cellUpdated - Merged cell range: row=[${row[0]},${row[1]}), col=[${col[0]},${col[1]})`);
+      } else { // 非合并单元格
+        console.log('----------------nooo new view (regular cell) ----');
+        row = [r, r + 1];
+        col = [c, c + 1];
+        console.log(`cellUpdated - Regular cell range: row=[${row[0]},${row[1]}), col=[${col[0]},${col[1]})`);
       }
-      if (value) {
+
+      // 只有当值实际提取出来后才记录修改 (包括空字符串 "" 作为一次有效的清空操作)
+      if (value !== undefined && value !== null) {
         this.modify_the_value.push({
           row: row,
           col: col,
-          value: value + ''
-        })
+          value: String(value) // 确保值为字符串类型
+        });
       }
-      console.log('callUpdated', this.modify_the_value)
+      
+      console.log('callUpdated - this.modify_the_value:', JSON.stringify(this.modify_the_value));
     },
     async saveExcel(file) {
       const formData = new FormData();
@@ -320,36 +332,7 @@ export default {
       }
     },
     async confirmClick() {
-      try {
-        await this.$confirm('确定提交已保存的数据？', '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        });
-        
-        this.$message.loading('正在保存，请稍候...'); // 显示加载提示
-        const res = await read_excel({
-          id: this.form.id
-        });
-    
-        if (res.code === 200) {
-          const submitRes = await submit(res.data);
-          if (submitRes.code === 200) {
-            await update({
-              id: this.form.id,
-              confirm_status: 1
-            });
-            this.$message.success('保存成功');
-            this.init();
-            return;
-          }
-        }
-        this.$message.error(res.msg || '保存失败');
-      } catch (error) {
-        if (error !== 'cancel') {
-          this.$message.error(error.message || '操作取消');
-        }
-      }
+      this.$message.info('此次是将修改后的excel数据同步到其他系统');
     },
     async arrangedClick() {
       this.arranged = false;
