@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import hashlib
 import uuid  # 添加uuid模块导入
 from flask_jwt_extended import create_access_token, get_jwt_identity

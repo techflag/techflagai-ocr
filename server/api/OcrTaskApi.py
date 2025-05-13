@@ -1,6 +1,7 @@
+# -*- coding: utf-8 -*-
 from flask import Blueprint, request
 from flask_jwt_extended import jwt_required
-
+from services import OcrTaskService
 from models.OcrTaskModel import OcrTaskModel
 from utils import modelUtil
 from utils.result import Result

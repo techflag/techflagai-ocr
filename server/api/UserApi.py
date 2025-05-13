@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from flask import Blueprint, make_response, jsonify
 from flask_jwt_extended import jwt_required, unset_jwt_cookies
 

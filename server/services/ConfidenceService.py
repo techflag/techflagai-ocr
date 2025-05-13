@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from api import db
 from models.ConfidenceModel import ConfidenceModel
 from utils import modelUtil, tokenUtil

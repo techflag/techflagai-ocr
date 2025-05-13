@@ -6,17 +6,17 @@
  **支持企业级用户与涉密单位本地化部署。** 
 
 ## 系统架构
-![输入图片说明](web/%E5%9B%BE%E7%89%871.png)
+![输入图片说明](web/readme/%E5%9B%BE%E7%89%871.png)
 
 ## 功能架构
-![输入图片说明](web/image.png)
+![输入图片说明](web/readme/image.png)
 
 ## 功能清单
-![输入图片说明](web/gnqd.png)
+![输入图片说明](web/readme/gnqd.png)
 
 ## 产品体验：http://techflag.cn/
 体验地址：
-![输入图片说明](web/image2.png)
+![输入图片说明](web/readme/image2.png)
 
 ## 安装视频
 后续增加

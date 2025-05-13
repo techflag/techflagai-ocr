@@ -1,4 +1,4 @@
-# coding: utf-8
+# -*- coding: utf-8 -*-
 from api import db
 
 class ConfidenceModel(db.Model):

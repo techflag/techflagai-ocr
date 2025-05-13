@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import base64
 import json
 import os
@@ -64,42 +65,54 @@ def save(ocrTaskModel, file):
 
     if trainModel is not None:
         ocrTaskModel.model_id = trainModel.id
-    print('调用第三方接口',ocrTaskModel)
-    
-
+   
     if trainModel is not None and trainModel.producte_line == 1:
         db.session.add(ocrTaskModel)
         db.session.commit()
         # 调用识别接口
-        print('启动异步任务,针对批量的处理')
+        # 针对批量处理的，可以作为后台改任务
         # 启动异步任务
-       
-
-        print('返回任务id：' + ocrTaskModel.id)
+        # TODO: 待实现异步任务
         return {
             'id': ocrTaskModel.id
         }
     else:
         rec_yml = trainModel.rec_yml
-        print('调用第三方接口')
-        print(rec_yml)
-        print(save_path)
         _ocr = ThirdPartyOCR(config=rec_yml)
         if trainModel.producte_line == 2:
             res = _ocr._recognize_textin(save_path)
-            if res and res.get('code') == 200:
-                ocrTaskModel.output_json = res.get('result', {}).get('pages', [])
+            ocr_resp = _ocr._recognize_textin(save_path)
+            ocr_result = ocr_resp.get('result', {})
+            if ocr_resp and ocr_resp.get('code') == 200:
+                if ocr_result and ocr_result.get('excel'):
+                    excel_base64 = ocr_result['excel']
+                    excel_path = save_excel_from_base64(excel_base64, target_dir, ocrTaskModel.id)
+                    if excel_path is None:
+                        print("错误：无法保存excel文件。")
+                        return {"code": 500,'msg': "无法保存excel文件。"}
+                ocrTaskModel.output_json = ThirdPartyOCR.extract_textin(ocr_resp)
+                ocrTaskModel.status = 1
+                ocrTaskModel.output_excel = excel_path
                 db.session.add(ocrTaskModel)
                 db.session.commit()
+                return {"code":200,'msg':"识别成功"}
             else:
+                ocrTaskModel.status = 2
+                db.session.add(ocrTaskModel)
+                db.session.commit()
                 return {"code":500,'msg':res.get('msg', {})}
         elif trainModel.producte_line == 3:
             res = _ocr._recognize_baidu(save_path)
             if res and 'error_code' not in res: 
                 ocrTaskModel.output_json = res.get('result', {}).get('tables', [])
                 db.session.add(ocrTaskModel)
+                ocrTaskModel.status = 1
                 db.session.commit()
+                return {"code":200,'msg':"识别成功"}
             else:
+                ocrTaskModel.status = 2
+                db.session.add(ocrTaskModel)
+                db.session.commit()
                 return {
                     "code": 500,
                     "msg": res.get('error_msg', '百度OCR识别失败')
@@ -116,7 +129,6 @@ def recognition(req):
     target_dir = _config.FILE_PATH
    
     save_path = target_dir + task.upload_image    # 你需要提供 save_path 的实际获取逻辑
-    print('model_id》》》》》》》',req.model_id)
     model_query = TrainModel.query
     model_query = model_query.filter(TrainModel.id == req.model_id) # 修改此行
     model = model_query.first()
@@ -126,7 +138,6 @@ def recognition(req):
 
     if not model or not model:
         # 处理 trainModel 或 rec_yml 不可用的情况
-        print("错误：无法获取模型信息或配置文件。")
         return {"code": 500, 'msg': "无法获取模型信息或配置文件。"}
 
     _ocr = ThirdPartyOCR(config=rec_yml)
@@ -143,7 +154,7 @@ def recognition(req):
                     print("错误：无法保存excel文件。")
                     return {"code": 500,'msg': "无法保存excel文件。"}
                 else:
-                    update_ocr_task_status(task_id=req.id, status=2, output_excel=excel_path, result=ThirdPartyOCR.extract_textin(ocr_resp))
+                    update_ocr_task_status(task_id=req.id, status=1, output_excel=excel_path, result=ThirdPartyOCR.extract_textin(ocr_resp))
                     return {"code": 200, "msg": "识别成功", "data": ocr_result}
                 
             # 考虑返回成功信息

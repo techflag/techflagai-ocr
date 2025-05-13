@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from models.TrainModel import TrainModel
 from api import db
 from utils import modelUtil,uuidUtil

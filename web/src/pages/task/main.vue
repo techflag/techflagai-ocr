@@ -51,7 +51,7 @@
       <a-list-item :key="task.id" v-for="task in taskList" style="padding: 0 4px">
         <a-card class="card-list">
           <img slot="cover" :src="getTaskImage(task.upload_image)" @click="handleCardClick(task.id)" height="154" />
-          <a-card-meta :title="task.name">
+          <a-card-meta>
             <div slot="description" style="font-size: 12px;">
               <div> 
                 <a-tag :color="task.status === 1 ? '#87d068' : task.status === 2 ? '#f50' : '#2db7f5'">
@@ -216,7 +216,6 @@ export default {
      * @param {*} value - 当前选中的模型ID
      */
     handleModelChange(value) {
-      console.log('识别模型已更改为:', value);
       this.model_id = value;
     },
     async fetchStatusCount() {
@@ -343,7 +342,7 @@ export default {
     },
     getTaskImage(uploadImage) {
       if (!uploadImage) {
-        return 'https://gw.alipayobjects.com/zos/rmsportal/iZBVOIhGJiAnhplqjvZW.png'
+        return 'null'
       }
       return `${process.env.VUE_APP_FILE_BASE_URL}${uploadImage}`
     },

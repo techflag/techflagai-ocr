@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import mimetypes
 import os
 import base64  # 添加这行导入base64模块
