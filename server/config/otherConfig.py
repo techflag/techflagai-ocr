@@ -27,6 +27,10 @@ class OtherConfig:
 
         #如果没有指定数据集id，则使用默认的数据集id
         self.DEFAULT_DATASET_ID = os.getenv('DEFAULT_DATASET_ID', 'f47ac10b58cc4372a5670e02b2c3d479')
+
+        self.OCR_OPEN_FILE_PATH = os.getenv('OCR_OPEN_FILE_PATH', 'D:/project_data/ocr/file/')
+        
+        self.STATIC_URL=os.getenv('STATIC_URL','127.0.0.1:8090/api/static/')
     
         
    

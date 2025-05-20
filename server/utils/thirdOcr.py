@@ -2,6 +2,7 @@
 import requests
 import json
 import base64
+from urllib.parse import urlencode # 导入 urlencode 用于构建查询字符串
 
 class ThirdPartyOCR:
     def __init__(self, config):
@@ -12,30 +13,45 @@ class ThirdPartyOCR:
             if 'baidu' in self.config.get('type', ''):
                 return self._recognize_baidu(file_path)
             else:
-                return self._recognize_textin(file_path)
+                # 将整个config传递给_recognize_textin，以便获取header和parameters
+                return self._recognize_textin(file_path, self.config)
         except Exception as e:
             return {"error": str(e)}
 
-    def _recognize_textin(self, file_path):
+    # 修改 _recognize_textin 方法以接收完整的 config
+    def _recognize_textin(self, file_path, config):
         try:
-            if isinstance(self.config, str):
-                import json
-                self.config = json.loads(self.config)
-            
-            headers = self.config['header']
+            # config 已经是字典格式，无需再次loads
+
+            headers = config.get('header', {}) # 使用get方法，提供默认空字典
             headers['Content-Type'] = 'application/octet-stream'
+
+            # 获取parameters，并过滤掉None值
+            parameters = {k: v for k, v in config.get('parameters', {}).items() if v is not None}
+
+            # 构建带有参数的URL
+            base_url = 'https://api.textin.com/ai/service/v2/recognize/table/multipage'
+            if parameters:
+                query_string = urlencode(parameters)
+                request_url = f"{base_url}?{query_string}"
+            else:
+                request_url = base_url
+
             image = self._get_file_content(file_path)
             response = requests.post(
-                'https://api.textin.com/ai/service/v2/recognize/table/multipage?excel=1&output_order=perpendicular&table_type_hint=automatic',
+                request_url, # 使用构建好的URL
                 data=image,
                 headers=headers
             )
             return response.json()
         except Exception as e:
-            return {"error": f"配置解析失败: {str(e)}"}
+            # 打印详细错误信息以便调试
+            import traceback
+            traceback.print_exc()
+            return {"code": 500, "msg": f"TextIn OCR 请求失败: {str(e)}"}
 
     def _recognize_baidu(self, file_path):
-        
+
 
         # 读取图像文件并进行Base64编码
         with open(file_path, "rb") as image_file:
@@ -47,7 +63,7 @@ class ThirdPartyOCR:
         headers = self.config['header']
         access_token = self._get_baidu_access_token()
         url = f"https://aip.baidubce.com/rest/2.0/ocr/v1/table?access_token={access_token}"
-        
+
         # 发送请求
         response = requests.post(url, headers=headers, data=params)
         return response.json()
@@ -70,7 +86,7 @@ class ThirdPartyOCR:
         """处理单个line数据，如果有cell信息则包含行列信息"""
         if not line:
             return None
-            
+
         item = {
             "box": line.get("position", [])[:4],  # 取position的前4个点作为box
             "col": [
@@ -96,7 +112,7 @@ class ThirdPartyOCR:
     def extract_textin(data):
         """递归提取所有层级的lines，保留行列信息"""
         result = []
-        
+
         # 处理页面级别的tables
         for page in data.get('result', {}).get('pages', []):
             for table in page.get('tables', []):
@@ -105,7 +121,7 @@ class ThirdPartyOCR:
                     item = ThirdPartyOCR.process_line(line)
                     if item:
                         result.append(item)
-                
+
                 # 处理table_cells中的lines（表格单元格内的文本）
                 for cell in table.get('table_cells', []):
                     for line in cell.get('lines', []):
@@ -113,8 +129,10 @@ class ThirdPartyOCR:
                         item = ThirdPartyOCR.process_line(line, cell)
                         if item:
                             result.append(item)
-        
+
         return result
+
+
 
 
 # 使用示例
@@ -123,8 +141,8 @@ if __name__ == "__main__":
     textin_config = {
         "api_url": "https://api.textin.com/ai/service/v2/recognize/table/multipage",
         "header": {
-            "x-ti-app-id": "f447cf3a5ec6ccfd07e7a22919c32596",
-            "x-ti-secret-code": "d4cea5f31ddadd5db804e9c82650c2c9"
+            "x-ti-app-id": "",
+            "x-ti-secret-code": ""
         },
         "body": {},
         "parameters": {
@@ -144,8 +162,8 @@ if __name__ == "__main__":
         "type": "baidu",
         "api_url": "https://aip.baidubce.com/rest/2.0/ocr/v1/table",
         "header": {
-            "API_KEY": "U5zl3fA3SmMSKGLmvZZ7rtmA",
-            "SECRET_KEY": "x3GhaG3BKqSpm0LpDYOK11V4Qtyqb7nK",
+            "API_KEY": "",
+            "SECRET_KEY": "",
             "Content-Type": "application/x-www-form-urlencoded",
             'Authorization': 'Bearer'
         },

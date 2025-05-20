@@ -102,6 +102,51 @@ def create_app():
             app.logger.error(f"serve_static: Unexpected error serving file: {str(e)}")
             traceback.print_exc() # 打印详细的堆栈跟踪
             abort(500) # 对于其他未知错误，返回500
+
+    @app.route('/api/static/<path:filename>')
+    def serve_ocr_static(filename):
+        try:
+            # 解码URL编码的路径
+            decoded_filename = unquote(filename)
+            app.logger.debug(f"serve_static: Original filename from URL: {filename}")
+            app.logger.debug(f"serve_static: Decoded filename: {decoded_filename!r}")
+            # 现在 _config.FILE_PATH 会使用上面新实例化的 _config 对象
+            app.logger.debug(f"serve_static: Configured FILE_PATH: {_config.OCR_OPEN_FILE_PATH!r}")
+
+            # 拼接完整路径 (用户提到的 L67 附近)
+            # _config.FILE_PATH 现在是正确的
+            full_path = os.path.join(_config.OCR_OPEN_FILE_PATH, decoded_filename)
+            app.logger.debug(f"serve_static: Constructed full_path: {full_path!r}")
+            
+            # 验证文件是否存在
+            file_exists = os.path.exists(full_path)
+            app.logger.debug(f"serve_static: Result of os.path.exists(full_path): {file_exists}")
+
+            if not file_exists:
+                app.logger.error(f"serve_static: File not found based on os.path.exists: {full_path}")
+                # 尝试列出父目录内容进行调试
+                parent_dir = os.path.dirname(full_path)
+                app.logger.debug(f"serve_static: Checking parent directory: {parent_dir!r}")
+                if os.path.exists(parent_dir) and os.path.isdir(parent_dir):
+                    app.logger.debug(f"serve_static: Parent directory {parent_dir} exists and is a directory.")
+                    try:
+                        app.logger.debug(f"serve_static: Contents of parent directory {parent_dir}: {os.listdir(parent_dir)}")
+                    except Exception as list_e:
+                        app.logger.debug(f"serve_static: Could not list contents of {parent_dir}: {list_e}")
+                else:
+                    app.logger.debug(f"serve_static: Parent directory {parent_dir} does not exist or is not a directory.")
+                abort(404) # 文件未找到，抛出404
+                
+            return send_from_directory(_config.OCR_OPEN_FILE_PATH, decoded_filename)
+        except HTTPException as e: # 捕获由 abort() 抛出的HTTP异常 (如 404)
+            # 这些是预期的HTTP错误，例如 abort(404)
+            app.logger.info(f"serve_static: HTTP exception occurred: {str(e)}") # 使用 info 或 debug 级别
+            # traceback.print_exc() # 对于HTTPException，堆栈跟踪可能不是必需的，除非用于调试
+            raise e # 重新抛出原始的HTTP异常，以便Flask正确处理它
+        except Exception as e: # 捕获其他所有非HTTP的意外错误
+            app.logger.error(f"serve_static: Unexpected error serving file: {str(e)}")
+            traceback.print_exc() # 打印详细的堆栈跟踪
+            abort(500) # 对于其他未知错误，返回500
     
     # 加载配置
     app.config.from_object(MysqlConfig)
